@@ -1,0 +1,144 @@
+<title>Sayısal Loto Son Çekiliş</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* Layout: tek sütun "çekiliş tahtası" — tarih başlığı, altı top bir rafta, Joker ve SüperStar ayrı rafta, altta kaynak notu. */
+  :root {
+    --bg: #eef1f6;
+    --panel: #ffffff;
+    --ink: #141a2b;
+    --muted: #5a6378;
+    --line: #d6dbe6;
+    --ball: #f7f8fb;
+    --ball-shade: #b9c1d3;
+    --joker: #d4372c;
+    --star: #e2a514;
+    --accent: #2b4cc4;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1220; --panel: #161b2d; --ink: #e8ebf3; --muted: #98a0b6; --line: #2a3150;
+      --ball: #f1f3f8; --ball-shade: #8d97b0; --joker: #ef5a4c; --star: #f2bb3a; --accent: #7d97ff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1220; --panel: #161b2d; --ink: #e8ebf3; --muted: #98a0b6; --line: #2a3150;
+    --ball: #f1f3f8; --ball-shade: #8d97b0; --joker: #ef5a4c; --star: #f2bb3a; --accent: #7d97ff;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 56px;
+  }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 28px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 7vw, 56px); line-height: 1.02; margin: 6px 0 0; text-wrap: balance; }
+  .when { margin: 10px 0 0; color: var(--muted); font-size: 17px; }
+  .when strong { color: var(--ink); font-weight: 500; }
+
+  .board { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 28px clamp(16px, 4vw, 32px); display: grid; gap: 26px; }
+  .rack-label { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .rack { display: flex; flex-wrap: wrap; gap: clamp(8px, 2vw, 16px); list-style: none; margin: 0; padding: 0; }
+  .ball {
+    --size: clamp(48px, 12vw, 84px);
+    width: var(--size); aspect-ratio: 1; max-width: 100%; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 600; font-size: calc(var(--size) * .38); font-variant-numeric: tabular-nums;
+    color: #141a2b;
+    background: radial-gradient(circle at 32% 28%, #ffffff 0 12%, var(--ball) 34%, var(--ball-shade) 100%);
+    box-shadow: inset 0 -6px 12px rgba(20, 26, 43, .18), 0 6px 14px rgba(20, 26, 43, .14);
+    animation: drop .5s cubic-bezier(.2, .9, .3, 1.25) both;
+  }
+  .rack .ball:nth-child(2) { animation-delay: .06s } .rack .ball:nth-child(3) { animation-delay: .12s }
+  .rack .ball:nth-child(4) { animation-delay: .18s } .rack .ball:nth-child(5) { animation-delay: .24s }
+  .rack .ball:nth-child(6) { animation-delay: .30s }
+  @keyframes drop { from { transform: translateY(-10px) scale(.92); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .ball { animation: none; } }
+
+  .extras { display: flex; flex-wrap: wrap; gap: 28px; border-top: 1px dashed var(--line); padding-top: 22px; }
+  .extra { display: flex; align-items: center; gap: 14px; }
+  .extra .ball { --size: clamp(48px, 10vw, 64px); color: #fff; }
+  .extra.joker .ball { background: radial-gradient(circle at 32% 28%, #ff9d93 0 10%, var(--joker) 45%, #8f1c14 100%); }
+  .extra.star .ball { background: radial-gradient(circle at 32% 28%, #ffe9a8 0 10%, var(--star) 45%, #8a5f00 100%); color: #2a1d00; }
+  .extra p { margin: 0; font-family: var(--display); font-weight: 600; font-size: 20px; }
+  .extra small { display: block; font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--muted); }
+
+  .note { margin: 0; font-size: 15px; color: var(--muted); }
+  footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  footer a { color: var(--accent); }
+  .stamp { font-family: var(--mono); font-size: 12px; }
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Son çekiliş sonucu</p>
+    <h1 id="game">Çılgın Sayısal Loto</h1>
+    <p class="when" id="when"><strong>14 Ekim 2026 Çarşamba</strong>, 21:30</p>
+  </header>
+
+  <section class="board" aria-labelledby="nums-label">
+    <div>
+      <p class="rack-label" id="nums-label">Kazanan numaralar</p>
+      <ol class="rack" id="numbers">
+        <li class="ball">1</li><li class="ball">3</li><li class="ball">65</li>
+        <li class="ball">66</li><li class="ball">79</li><li class="ball">81</li>
+      </ol>
+    </div>
+    <div class="extras">
+      <div class="extra joker"><span class="ball" id="joker">50</span><p>Joker<small>7. top</small></p></div>
+      <div class="extra star"><span class="ball" id="superstar">20</span><p>SüperStar<small>Ek oyun</small></p></div>
+    </div>
+    <p class="note" id="note">6 bilen çıkmadı, büyük ikramiye devretti.</p>
+  </section>
+
+  <footer>
+    <span>Kaynak: <a id="source" href="https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari" target="_blank" rel="noopener">millipiyangoonline.com</a>. Kupon kontrolü için resmi sonuç sayfasını esas alın.</span>
+    <span class="stamp" id="stamp">Güncellendi: 17.10.2026</span>
+  </footer>
+</main>
+
+<script>
+  // Sayfa gömülü sonuçla açılır; data/latest.json bulunursa onunla günceller.
+  (function () {
+    var trDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "Europe/Istanbul" });
+    function render(d) {
+      if (!d || !Array.isArray(d.numbers) || d.numbers.length !== 6) return;
+      document.getElementById("game").textContent = d.game || "Sayısal Loto";
+      var when = document.getElementById("when");
+      when.innerHTML = "";
+      var strong = document.createElement("strong");
+      strong.textContent = trDate.format(new Date(d.date + "T12:00:00+03:00"));
+      when.appendChild(strong);
+      if (d.time) when.appendChild(document.createTextNode(", " + d.time));
+      var rack = document.getElementById("numbers");
+      rack.innerHTML = "";
+      d.numbers.forEach(function (n) {
+        var li = document.createElement("li");
+        li.className = "ball";
+        li.textContent = n;
+        rack.appendChild(li);
+      });
+      document.getElementById("joker").textContent = d.joker ?? "–";
+      document.getElementById("superstar").textContent = d.superstar ?? "–";
+      var note = document.getElementById("note");
+      note.textContent = d.note || "";
+      note.hidden = !d.note;
+      if (d.updatedAt) {
+        document.getElementById("stamp").textContent = "Güncellendi: " +
+          new Date(d.updatedAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+      }
+    }
+    fetch("data/latest.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(render)
+      .catch(function () {});
+  })();
+</script>
