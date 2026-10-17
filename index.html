@@ -1,10 +1,10 @@
-<title>Sayısal Loto Son Çekiliş</title>
+<title>Sayısal Loto Ekim Sonuçları</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-  /* Layout: tek sütun "çekiliş tahtası" — tarih başlığı, altı top bir rafta, Joker ve SüperStar ayrı rafta, altta kaynak notu. */
+  /* Layout: tek sütun "çekiliş tahtası" — en son çekiliş büyük tahtada, ayın diğer çekilişleri altında satır satır. */
   :root {
     --bg: #eef1f6;
     --panel: #ffffff;
@@ -41,6 +41,7 @@
   main { max-width: 760px; margin: 0 auto; display: grid; gap: 28px; }
   .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
   h1 { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 7vw, 56px); line-height: 1.02; margin: 6px 0 0; text-wrap: balance; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; text-wrap: balance; }
   .when { margin: 10px 0 0; color: var(--muted); font-size: 17px; }
   .when strong { color: var(--ink); font-weight: 500; }
 
@@ -49,29 +50,40 @@
   .rack { display: flex; flex-wrap: wrap; gap: clamp(8px, 2vw, 16px); list-style: none; margin: 0; padding: 0; }
   .ball {
     --size: clamp(48px, 12vw, 84px);
-    width: var(--size); aspect-ratio: 1; max-width: 100%; border-radius: 50%;
+    width: var(--size); aspect-ratio: 1; max-width: 100%; border-radius: 50%; flex: none;
     display: grid; place-items: center;
     font-family: var(--mono); font-weight: 600; font-size: calc(var(--size) * .38); font-variant-numeric: tabular-nums;
     color: #141a2b;
     background: radial-gradient(circle at 32% 28%, #ffffff 0 12%, var(--ball) 34%, var(--ball-shade) 100%);
     box-shadow: inset 0 -6px 12px rgba(20, 26, 43, .18), 0 6px 14px rgba(20, 26, 43, .14);
-    animation: drop .5s cubic-bezier(.2, .9, .3, 1.25) both;
   }
-  .rack .ball:nth-child(2) { animation-delay: .06s } .rack .ball:nth-child(3) { animation-delay: .12s }
-  .rack .ball:nth-child(4) { animation-delay: .18s } .rack .ball:nth-child(5) { animation-delay: .24s }
-  .rack .ball:nth-child(6) { animation-delay: .30s }
+  .board .rack .ball { animation: drop .5s cubic-bezier(.2, .9, .3, 1.25) both; }
+  .board .rack .ball:nth-child(2) { animation-delay: .06s } .board .rack .ball:nth-child(3) { animation-delay: .12s }
+  .board .rack .ball:nth-child(4) { animation-delay: .18s } .board .rack .ball:nth-child(5) { animation-delay: .24s }
+  .board .rack .ball:nth-child(6) { animation-delay: .30s }
   @keyframes drop { from { transform: translateY(-10px) scale(.92); } to { transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .ball { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .board .rack .ball { animation: none; } }
+
+  .ball.joker { color: #fff; background: radial-gradient(circle at 32% 28%, #ff9d93 0 10%, var(--joker) 45%, #8f1c14 100%); }
+  .ball.star { color: #2a1d00; background: radial-gradient(circle at 32% 28%, #ffe9a8 0 10%, var(--star) 45%, #8a5f00 100%); }
 
   .extras { display: flex; flex-wrap: wrap; gap: 28px; border-top: 1px dashed var(--line); padding-top: 22px; }
   .extra { display: flex; align-items: center; gap: 14px; }
-  .extra .ball { --size: clamp(48px, 10vw, 64px); color: #fff; }
-  .extra.joker .ball { background: radial-gradient(circle at 32% 28%, #ff9d93 0 10%, var(--joker) 45%, #8f1c14 100%); }
-  .extra.star .ball { background: radial-gradient(circle at 32% 28%, #ffe9a8 0 10%, var(--star) 45%, #8a5f00 100%); color: #2a1d00; }
+  .extra .ball { --size: clamp(48px, 10vw, 64px); }
   .extra p { margin: 0; font-family: var(--display); font-weight: 600; font-size: 20px; }
   .extra small { display: block; font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--muted); }
-
   .note { margin: 0; font-size: 15px; color: var(--muted); }
+
+  .history { display: grid; gap: 14px; }
+  .rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 12px 20px; padding-block: 16px; border-bottom: 1px solid var(--line); }
+  .row time { font-weight: 500; }
+  .row time small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .row .set { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+  .row .ball { --size: 40px; box-shadow: inset 0 -3px 6px rgba(20, 26, 43, .18); }
+  .row .sep { width: 1px; height: 28px; background: var(--line); margin-inline: 4px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } .row .ball { --size: 36px; } }
+
   footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   footer a { color: var(--accent); }
   .stamp { font-family: var(--mono); font-size: 12px; }
@@ -81,62 +93,115 @@
   <header>
     <p class="eyebrow">Son çekiliş sonucu</p>
     <h1 id="game">Çılgın Sayısal Loto</h1>
-    <p class="when" id="when"><strong>14 Ekim 2026 Çarşamba</strong>, 21:30</p>
+    <p class="when" id="when"></p>
   </header>
 
   <section class="board" aria-labelledby="nums-label">
     <div>
       <p class="rack-label" id="nums-label">Kazanan numaralar</p>
-      <ol class="rack" id="numbers">
-        <li class="ball">1</li><li class="ball">3</li><li class="ball">65</li>
-        <li class="ball">66</li><li class="ball">79</li><li class="ball">81</li>
-      </ol>
+      <ol class="rack" id="numbers"></ol>
     </div>
     <div class="extras">
-      <div class="extra joker"><span class="ball" id="joker">50</span><p>Joker<small>7. top</small></p></div>
-      <div class="extra star"><span class="ball" id="superstar">20</span><p>SüperStar<small>Ek oyun</small></p></div>
+      <div class="extra"><span class="ball joker" id="joker"></span><p>Joker<small>7. top</small></p></div>
+      <div class="extra"><span class="ball star" id="superstar"></span><p>SüperStar<small>Ek oyun</small></p></div>
     </div>
-    <p class="note" id="note">6 bilen çıkmadı, büyük ikramiye devretti.</p>
+    <p class="note" id="note"></p>
+  </section>
+
+  <section class="history" aria-labelledby="history-title">
+    <h2 id="history-title">Ekim 2026'daki tüm çekilişler</h2>
+    <ol class="rows" id="rows"></ol>
   </section>
 
   <footer>
-    <span>Kaynak: <a id="source" href="https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari" target="_blank" rel="noopener">millipiyangoonline.com</a>. Kupon kontrolü için resmi sonuç sayfasını esas alın.</span>
-    <span class="stamp" id="stamp">Güncellendi: 17.10.2026</span>
+    <span>Kaynak: <a id="source" href="https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari" target="_blank" rel="noopener">millipiyangoonline.com</a>. Kupon kontrolü için resmi sonuç sayfasını esas alın. Kırmızı top Joker, sarı top SüperStar.</span>
+    <span class="stamp" id="stamp"></span>
   </footer>
 </main>
 
+<script type="application/json" id="seed">
+{
+  "game": "Çılgın Sayısal Loto",
+  "updatedAt": "2026-10-17T16:40:00Z",
+  "draws": [
+    { "date": "2026-10-14", "time": "21:30", "numbers": [1, 3, 65, 66, 79, 81], "joker": 50, "superstar": 20, "note": "6 bilen çıkmadı, büyük ikramiye devretti." },
+    { "date": "2026-10-10", "time": "21:30", "numbers": [14, 26, 35, 45, 47, 57], "joker": 21, "superstar": 82, "note": "6 bilen çıkmadı, büyük ikramiye devretti." },
+    { "date": "2026-10-07", "time": "21:30", "numbers": [38, 40, 44, 48, 63, 77], "joker": 9, "superstar": 74, "note": "6 bilen çıkmadı, büyük ikramiye devretti." },
+    { "date": "2026-10-03", "time": "21:30", "numbers": [1, 7, 18, 25, 40, 64], "joker": 20, "superstar": 66, "note": "6 bilen çıkmadı, büyük ikramiye devretti." }
+  ]
+}
+</script>
 <script>
-  // Sayfa gömülü sonuçla açılır; data/latest.json bulunursa onunla günceller.
+  // Sayfa gömülü sonuçlarla açılır; data/results.json bulunursa onunla günceller.
   (function () {
-    var trDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "Europe/Istanbul" });
-    function render(d) {
-      if (!d || !Array.isArray(d.numbers) || d.numbers.length !== 6) return;
-      document.getElementById("game").textContent = d.game || "Sayısal Loto";
+    var longDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "Europe/Istanbul" });
+    var dayName = new Intl.DateTimeFormat("tr-TR", { weekday: "long", timeZone: "Europe/Istanbul" });
+    var shortDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", timeZone: "Europe/Istanbul" });
+    function asDate(s) { return new Date(s + "T12:00:00+03:00"); }
+    function ball(n, cls, tag) {
+      var el = document.createElement(tag || "span");
+      el.className = "ball" + (cls ? " " + cls : "");
+      el.textContent = n ?? "–";
+      return el;
+    }
+    function valid(d) { return d && Array.isArray(d.numbers) && d.numbers.length === 6; }
+
+    function render(data) {
+      if (!data || !Array.isArray(data.draws)) return;
+      var draws = data.draws.filter(valid).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      if (!draws.length) return;
+      var last = draws[0];
+
+      document.getElementById("game").textContent = data.game || "Sayısal Loto";
       var when = document.getElementById("when");
       when.innerHTML = "";
       var strong = document.createElement("strong");
-      strong.textContent = trDate.format(new Date(d.date + "T12:00:00+03:00"));
+      strong.textContent = longDate.format(asDate(last.date));
       when.appendChild(strong);
-      if (d.time) when.appendChild(document.createTextNode(", " + d.time));
+      if (last.time) when.appendChild(document.createTextNode(", " + last.time));
+
       var rack = document.getElementById("numbers");
       rack.innerHTML = "";
-      d.numbers.forEach(function (n) {
-        var li = document.createElement("li");
-        li.className = "ball";
-        li.textContent = n;
-        rack.appendChild(li);
-      });
-      document.getElementById("joker").textContent = d.joker ?? "–";
-      document.getElementById("superstar").textContent = d.superstar ?? "–";
+      last.numbers.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+      document.getElementById("joker").textContent = last.joker ?? "–";
+      document.getElementById("superstar").textContent = last.superstar ?? "–";
       var note = document.getElementById("note");
-      note.textContent = d.note || "";
-      note.hidden = !d.note;
-      if (d.updatedAt) {
+      note.textContent = last.note || "";
+      note.hidden = !last.note;
+
+      var rows = document.getElementById("rows");
+      rows.innerHTML = "";
+      draws.forEach(function (d) {
+        var li = document.createElement("li");
+        li.className = "row";
+        var t = document.createElement("time");
+        t.dateTime = d.date;
+        t.textContent = shortDate.format(asDate(d.date));
+        var small = document.createElement("small");
+        small.textContent = dayName.format(asDate(d.date)) + (d.time ? ", " + d.time : "");
+        t.appendChild(small);
+        var set = document.createElement("div");
+        set.className = "set";
+        set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + d.joker + ", SüperStar " + d.superstar);
+        d.numbers.forEach(function (n) { set.appendChild(ball(n)); });
+        var sep = document.createElement("span");
+        sep.className = "sep";
+        set.appendChild(sep);
+        set.appendChild(ball(d.joker, "joker"));
+        set.appendChild(ball(d.superstar, "star"));
+        li.appendChild(t);
+        li.appendChild(set);
+        rows.appendChild(li);
+      });
+
+      if (data.updatedAt) {
         document.getElementById("stamp").textContent = "Güncellendi: " +
-          new Date(d.updatedAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+          new Date(data.updatedAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
       }
     }
-    fetch("data/latest.json", { cache: "no-store" })
+
+    try { render(JSON.parse(document.getElementById("seed").textContent)); } catch (e) {}
+    fetch("data/results.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(render)
       .catch(function () {});
