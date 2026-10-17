@@ -129,7 +129,7 @@
  "period": "2025-10-18 – 2026-10-17",
  "source": "https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari",
  "method": "manual-crosscheck",
- "updatedAt": "2026-10-17T22:16:25Z",
+ "updatedAt": "2026-10-17T22:28:07Z",
  "draws": [
   {"date": "2026-10-17", "drawNo": 124, "time": "21:30", "numbers": [6, 19, 39, 59, 75, 85], "joker": 84, "superstar": 7},
   {"date": "2026-10-14", "drawNo": 123, "time": "21:30", "numbers": [1, 3, 65, 66, 79, 81], "joker": 50, "superstar": 20},
@@ -249,6 +249,7 @@
   {"date": "2026-01-21", "drawNo": 9, "time": "21:30", "numbers": [6, 23, 40, 50, 71, 89], "joker": 4, "superstar": 67},
   {"date": "2026-01-19", "drawNo": 8, "time": "21:30", "numbers": [2, 21, 27, 62, 74, 81], "joker": 33, "superstar": 84},
   {"date": "2026-01-17", "drawNo": 7, "time": "21:30", "numbers": [10, 26, 28, 57, 65, 82], "joker": 34, "superstar": 70},
+  {"date": "2026-01-14", "drawNo": 6, "time": "21:30", "numbers": [2, 3, 8, 41, 68, 90], "joker": null, "superstar": null},
   {"date": "2026-01-12", "drawNo": 5, "time": "21:30", "numbers": [6, 31, 38, 51, 66, 68], "joker": 88, "superstar": 64},
   {"date": "2026-01-10", "drawNo": 4, "time": "21:30", "numbers": [3, 23, 55, 59, 69, 82], "joker": 36, "superstar": 80},
   {"date": "2026-01-07", "drawNo": 3, "time": "21:30", "numbers": [13, 24, 44, 79, 80, 89], "joker": 39, "superstar": 44},
@@ -263,6 +264,7 @@
   {"date": "2025-12-17", "drawNo": 151, "time": "21:30", "numbers": [3, 6, 8, 28, 55, 82], "joker": 17, "superstar": 21},
   {"date": "2025-12-15", "drawNo": 150, "time": "21:30", "numbers": [2, 3, 17, 48, 68, 82], "joker": 29, "superstar": 48},
   {"date": "2025-12-13", "drawNo": 149, "time": "21:30", "numbers": [7, 57, 67, 70, 74, 86], "joker": 4, "superstar": 22},
+  {"date": "2025-12-10", "drawNo": 148, "time": "21:30", "numbers": [30, 38, 43, 54, 62, 71], "joker": 74, "superstar": 39},
   {"date": "2025-12-08", "drawNo": 147, "time": "21:30", "numbers": [8, 29, 38, 73, 76, 88], "joker": 13, "superstar": 68},
   {"date": "2025-12-06", "drawNo": 146, "time": "21:30", "numbers": [14, 38, 56, 73, 74, 87], "joker": 29, "superstar": 81},
   {"date": "2025-12-03", "drawNo": 145, "time": "21:30", "numbers": [2, 6, 19, 47, 53, 62], "joker": 56, "superstar": 45},
@@ -351,7 +353,7 @@
         t.appendChild(small);
         var set = document.createElement("div");
         set.className = "set";
-        set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + d.superstar);
+        set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + (d.superstar ?? "bilinmiyor"));
         d.numbers.forEach(function (n) { set.appendChild(ball(n)); });
         var sep = document.createElement("span");
         sep.className = "sep";
