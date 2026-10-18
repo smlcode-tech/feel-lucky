@@ -8,6 +8,9 @@ import datetime as D
 import json
 import sys
 
+# SüperStar was first drawn on 2021-10-20; earlier draws have none by design.
+SUPERSTAR_START = "2021-10-20"
+
 draws = {x["date"]: x for x in json.load(open("data/results.json"))["draws"]}
 
 candidates = {}
@@ -42,7 +45,10 @@ while d <= last:
             rows.append([key, ordinal(d), "tüm çekiliş", reason,
                          c[2] if known else "", c[3] if known else "", c[4] if known else ""])
         else:
-            missing = [name for name, v in (("Joker", x["joker"]), ("SüperStar", x["superstar"])) if v is None]
+            fields = [("Joker", x["joker"])]
+            if key >= SUPERSTAR_START:
+                fields.append(("SüperStar", x["superstar"]))
+            missing = [name for name, v in fields if v is None]
             if missing:
                 rows.append([key, x["drawNo"], " ve ".join(missing), "kaynaklar çelişiyor veya etiketsiz", "", "", ""])
     d += D.timedelta(1)
