@@ -9,8 +9,6 @@ import json
 import sys
 
 draws = {x["date"]: x for x in json.load(open("data/results.json"))["draws"]}
-first = D.date.fromisoformat(min(draws))
-last = D.date.fromisoformat(max(draws))
 
 candidates = {}
 for path in sys.argv[1:]:
@@ -18,6 +16,10 @@ for path in sys.argv[1:]:
         p = [s.strip() for s in raw.strip().split("|")]
         if len(p) >= 8 and p[0][:4].isdigit():
             candidates[p[0]] = p
+
+# A missing first draw of the period only shows up among the candidates.
+first = D.date.fromisoformat(min([*draws, *candidates]))
+last = D.date.fromisoformat(max(draws))
 
 
 def ordinal(d):
@@ -34,8 +36,10 @@ while d <= last:
         if x is None:
             c = candidates.get(key)
             known = c is not None and c[2] not in ("?", "", "UNRESOLVED") and "?" not in c[2]
-            rows.append([key, ordinal(d), "tüm çekiliş",
-                         "tek kaynakta bulundu, doğrulanmadı" if known else "numaralar hiçbir kaynakta bulunamadı",
+            reason = "tek kaynakta bulundu, doğrulanmadı" if known else "numaralar hiçbir kaynakta bulunamadı"
+            if c is not None and c[7]:
+                reason += f" ({c[7]})"
+            rows.append([key, ordinal(d), "tüm çekiliş", reason,
                          c[2] if known else "", c[3] if known else "", c[4] if known else ""])
         else:
             missing = [name for name, v in (("Joker", x["joker"]), ("SüperStar", x["superstar"])) if v is None]
