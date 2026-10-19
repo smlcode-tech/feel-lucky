@@ -87,12 +87,37 @@
   .row .sep { width: 1px; height: 28px; background: var(--line); margin-inline: 4px; }
   @media (max-width: 560px) { .row { grid-template-columns: 1fr; } .row .ball { --size: 36px; } }
 
+  .predict { background: var(--panel); border: 2px solid var(--accent); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 18px; }
+  .predict-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+  .predict .ball { --size: clamp(44px, 11vw, 72px); }
+  .predict button {
+    font: 500 15px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 999px;
+    padding: 10px 18px; min-height: 44px; cursor: pointer;
+  }
+  .predict button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .pairs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .pairs li { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 14px; color: var(--muted); }
+  .pairs b { display: block; font-family: var(--mono); font-weight: 600; font-size: 15px; color: var(--ink); }
+
   footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   footer a { color: var(--accent); }
   .stamp { font-family: var(--mono); font-size: 12px; }
 </style>
 
 <main>
+  <section class="predict" aria-labelledby="predict-title">
+    <div class="predict-head">
+      <div>
+        <p class="eyebrow">Yeni tahmin · ardışık slot çiftleri</p>
+        <h2 id="predict-title">Önerilen 6'lı</h2>
+      </div>
+      <button type="button" id="predict-btn">Yeni 6'lı üret</button>
+    </div>
+    <ol class="rack" id="predict-numbers" aria-live="polite"></ol>
+    <ul class="pairs" id="predict-pairs"></ul>
+    <p class="note" id="predict-note"></p>
+  </section>
+
   <header>
     <p class="eyebrow">Son çekiliş sonucu</p>
     <h1 id="game">Çılgın Sayısal Loto</h1>
@@ -986,11 +1011,95 @@
       document.getElementById("history-sub").textContent =
         shortDate.format(asDate(oldest.date)) + " – " + shortDate.format(asDate(last.date)) + " arası " + draws.length + " çekiliş. Çekilişler Pazartesi, Çarşamba ve Cumartesi 21:30'da yapılır.";
 
+      buildModel(draws);
+      predict();
+
       if (data.updatedAt) {
         document.getElementById("stamp").textContent = "Güncellendi: " +
           new Date(data.updatedAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
       }
     }
+
+    // Tahmin: sıralı 6'lıda yan yana duran (1-2, 2-3 … 5-6. slot) çiftler; Joker ve SüperStar hariç.
+    // Ham yüzde (X'ten sonra Y'nin gelme oranı) aralığı dar çiftleri ve 89→90 gibi uç çiftleri kendiliğinden şişirir,
+    // bu yüzden her çift gerçekleşen oranın rastgelelikte beklenen orana bölümüyle (oran/beklenen) puanlanır.
+    var CANDIDATES = 20000, KEEP = 0.01;
+    var model = null;
+    function comb(n, k) {
+      if (k < 0 || n < k) return 0;
+      var r = 1;
+      for (var i = 1; i <= k; i++) r = r * (n - k + i) / i;
+      return r;
+    }
+    function buildModel(draws) {
+      var pair = {}, out = new Array(91).fill(0), seen = new Array(91).fill(0);
+      draws.forEach(function (d) {
+        var s = d.numbers.slice().sort(function (a, b) { return a - b; });
+        s.forEach(function (n) { seen[n]++; });
+        for (var i = 0; i < 5; i++) {
+          var k = s[i] * 100 + s[i + 1];
+          pair[k] = (pair[k] || 0) + 1;
+          out[s[i]]++;
+        }
+      });
+      model = { pair: pair, out: out, seen: seen, draws: draws.length, c895: comb(89, 5) };
+    }
+    function pairStats(x, y) {
+      var count = model.pair[x * 100 + y] || 0;
+      // X çekilişteyse X'ten büyük ilk sayının Y olma olasılığı: C(89-(Y-X), 4) / C(89, 5)
+      var expected = model.seen[x] * comb(89 - (y - x), 4) / model.c895;
+      return { count: count, expected: expected, out: model.out[x], lift: (count + 1) / (expected + 1) };
+    }
+    function randomSet() {
+      var picked = new Set(), buf = new Uint32Array(1);
+      while (picked.size < 6) {
+        crypto.getRandomValues(buf);
+        picked.add(1 + buf[0] % 90);
+      }
+      return Array.from(picked).sort(function (a, b) { return a - b; });
+    }
+    function score(s) {
+      var t = 0;
+      for (var i = 0; i < 5; i++) t += pairStats(s[i], s[i + 1]).lift;
+      return t / 5;
+    }
+    var pct = new Intl.NumberFormat("tr-TR", { style: "percent", maximumFractionDigits: 1 });
+    function predict() {
+      if (!model) return;
+      var pool = [];
+      for (var i = 0; i < CANDIDATES; i++) {
+        var s = randomSet();
+        pool.push({ s: s, score: score(s) });
+      }
+      pool.sort(function (a, b) { return b.score - a.score; });
+      var keep = Math.round(CANDIDATES * KEEP);
+      var buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      var pick = pool[buf[0] % keep].s;
+
+      var rack = document.getElementById("predict-numbers");
+      rack.innerHTML = "";
+      pick.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+
+      var list = document.getElementById("predict-pairs");
+      list.innerHTML = "";
+      for (var j = 0; j < 5; j++) {
+        var x = pick[j], y = pick[j + 1], st = pairStats(x, y);
+        var li = document.createElement("li");
+        var b = document.createElement("b");
+        b.textContent = (j + 1) + "–" + (j + 2) + ". slot: " + x + " → " + y;
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(
+          st.out ? pct.format(st.count / st.out) + " (beklenen " + pct.format(st.expected / st.out) + ") · " + st.count + " kez"
+                 : "geçmişte yok"));
+        list.appendChild(li);
+      }
+      document.getElementById("predict-note").textContent =
+        CANDIDATES.toLocaleString("tr-TR") + " rastgele kombinasyon üretildi. 5 çiftinin geçmiş " + model.draws +
+        " çekilişteki oranı, beklenen orana göre en yüksek olan %" + KEEP * 100 + "'lik dilimden (" + keep +
+        " kombinasyon) biri rastgele seçildi. Her 6'lının çıkma olasılığı aynıdır (622.614.630'da 1); bu filtre kazanma şansını artırmaz.";
+    }
+    document.getElementById("predict-btn").addEventListener("click", predict);
 
     try { render(JSON.parse(document.getElementById("seed").textContent)); } catch (e) {}
     fetch("data/results.json", { cache: "no-store" })
