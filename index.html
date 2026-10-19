@@ -99,6 +99,37 @@
   .pairs li { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 14px; color: var(--muted); }
   .pairs b { display: block; font-family: var(--mono); font-weight: 600; font-size: 15px; color: var(--ink); }
 
+  .entry { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 16px; }
+  .entry[hidden] { display: none; }
+  .date-field { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-weight: 500; }
+  .date-field input { font: 500 16px var(--mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; color-scheme: inherit; }
+  .entry-day { margin: -6px 0 0; font-size: 14px; color: var(--muted); }
+  .entry-day.warn, .entry .status.warn { color: var(--joker); }
+  .slots { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .slots li { display: grid; justify-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .slot { padding: 0; border: 2px dashed var(--ball-shade); cursor: pointer; }
+  .slot.ball { --size: 48px; box-shadow: none; }
+  .slot.empty { background: transparent; color: var(--muted); }
+  .slot[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .slot:not(.empty) { border-style: solid; border-color: transparent; }
+  .numgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .numgrid button {
+    font: 600 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; min-height: 36px; padding: 0; cursor: pointer;
+  }
+  .numgrid button:disabled { opacity: .3; cursor: default; }
+  .numgrid button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .entry-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .entry button.primary { font: 500 15px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
+  .entry button.ghost { font: 500 15px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
+  .entry button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .entry .status { margin: 0; font-size: 14px; color: var(--muted); }
+  .manual-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .manual-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; }
+  .manual-list b { font-family: var(--mono); font-weight: 600; }
+  .manual-list button { font: 500 13px var(--body); color: var(--accent); background: none; border: 0; padding: 6px 8px; min-height: 32px; cursor: pointer; }
+  .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
   footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   footer a { color: var(--accent); }
   .stamp { font-family: var(--mono); font-size: 12px; }
@@ -134,6 +165,23 @@
       <div class="extra"><span class="ball star" id="superstar"></span><p>SüperStar<small>Ek oyun</small></p></div>
     </div>
     <p class="note" id="note"></p>
+  </section>
+
+  <section class="entry" id="entry" hidden aria-labelledby="entry-title">
+    <div>
+      <p class="eyebrow">Elle sonuç girişi</p>
+      <h2 id="entry-title">Yeni çekilişi ekle</h2>
+    </div>
+    <label class="date-field">Çekiliş tarihi <input type="date" id="entry-date" required></label>
+    <p class="entry-day" id="entry-day"></p>
+    <ol class="slots" id="slots" aria-label="Slotlar: 6 numara, Joker, SüperStar"></ol>
+    <div class="numgrid" id="numgrid" role="group" aria-label="Seçili slot için numara"></div>
+    <div class="entry-actions">
+      <button type="button" class="primary" id="entry-save">Kaydet</button>
+      <button type="button" class="ghost" id="entry-clear">Temizle</button>
+    </div>
+    <p class="status" id="entry-status" role="status"></p>
+    <ul class="manual-list" id="manual-list" aria-label="Elle eklenen çekilişler"></ul>
   </section>
 
   <section class="history" aria-labelledby="history-title">
@@ -948,8 +996,22 @@
     }
     function valid(d) { return d && Array.isArray(d.numbers) && d.numbers.length === 6; }
 
+    // Gömülü/çekilen sonuçlar `base`, elle girilenler `manual`; aynı tarih iki yerde varsa doğrulanmış kayıt kazanır.
+    var base = null, manual = [];
+    function merged() {
+      var have = {};
+      base.draws.forEach(function (d) { have[d.date] = true; });
+      var extra = manual.filter(function (m) { return !have[m.date]; });
+      return Object.assign({}, base, { draws: base.draws.concat(extra) });
+    }
     function render(data) {
       if (!data || !Array.isArray(data.draws)) return;
+      base = data;
+      paint(merged());
+      entryRefresh();
+    }
+
+    function paint(data) {
       var draws = data.draws.filter(valid).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
       if (!draws.length) return;
       var last = draws[0];
@@ -993,6 +1055,12 @@
         var small = document.createElement("small");
         small.textContent = dayName.format(asDate(d.date)) + (d.drawNo ? " · " + d.drawNo + ". çekiliş" : "");
         t.appendChild(small);
+        if (d.manual) {
+          var tag = document.createElement("small");
+          tag.className = "tag";
+          tag.textContent = "Elle eklendi";
+          t.appendChild(tag);
+        }
         var set = document.createElement("div");
         set.className = "set";
         set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + (d.superstar ?? "bilinmiyor"));
@@ -1100,6 +1168,193 @@
         " kombinasyon) biri rastgele seçildi. Her 6'lının çıkma olasılığı aynıdır (622.614.630'da 1); bu filtre kazanma şansını artırmaz.";
     }
     document.getElementById("predict-btn").addEventListener("click", predict);
+
+    // Elle giriş: 8 slot (6 numara, Joker, SüperStar) + tarih. Kayıtlar artifact veritabanında data/loto/manual altında durur;
+    // veritabanı yoksa (ör. Vercel) form gizli kalır.
+    var SLOT_NAMES = ["1", "2", "3", "4", "5", "6", "Joker", "SüperStar"];
+    var slots = new Array(8).fill(null), active = 0, manualCol = null;
+    var dateInput = document.getElementById("entry-date");
+    function isoDay(d) { return d.toISOString().slice(0, 10); }
+    function isDrawDay(s) { var w = new Date(s + "T12:00:00Z").getUTCDay(); return w === 1 || w === 3 || w === 6; }
+    function drawNoOf(s) {
+      var d = new Date(s + "T12:00:00Z"), n = 0;
+      for (var t = new Date(Date.UTC(d.getUTCFullYear(), 0, 1, 12)); t <= d; t.setUTCDate(t.getUTCDate() + 1)) {
+        var w = t.getUTCDay();
+        if (w === 1 || w === 3 || w === 6) n++;
+      }
+      return n;
+    }
+    function cleanManual(x, id) {
+      if (!x || typeof x !== "object") return null;
+      var nums = Array.isArray(x.numbers) ? x.numbers.map(Number) : [];
+      var ok = function (n) { return Number.isInteger(n) && n >= 1 && n <= 90; };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(id) || nums.length !== 6 || !nums.every(ok) || new Set(nums).size !== 6) return null;
+      var j = Number(x.joker), s = Number(x.superstar);
+      return {
+        date: id, drawNo: drawNoOf(id), time: "21:30", manual: true,
+        numbers: nums.sort(function (a, b) { return a - b; }),
+        joker: ok(j) && nums.indexOf(j) < 0 ? j : null, superstar: ok(s) ? s : null
+      };
+    }
+    function taken(i) {
+      // Ana numaralar ve Joker aynı torbadan çekilir; SüperStar ayrı torbadan.
+      if (i === 7) return {};
+      var used = {};
+      for (var k = 0; k < 7; k++) if (k !== i && slots[k] != null) used[slots[k]] = true;
+      return used;
+    }
+    function setStatus(msg, warn) {
+      var el = document.getElementById("entry-status");
+      el.textContent = msg;
+      el.className = "status" + (warn ? " warn" : "");
+    }
+    function drawSlots() {
+      var ol = document.getElementById("slots");
+      ol.innerHTML = "";
+      slots.forEach(function (v, i) {
+        var li = document.createElement("li");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "slot ball" + (i === 6 ? " joker" : i === 7 ? " star" : "") + (v == null ? " empty" : "");
+        b.textContent = v == null ? "–" : v;
+        b.setAttribute("aria-pressed", String(i === active));
+        b.setAttribute("aria-label", SLOT_NAMES[i] + (i < 6 ? ". numara" : "") + ": " + (v == null ? "boş" : v));
+        b.addEventListener("click", function () { active = i; drawSlots(); drawGrid(); });
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(i < 6 ? (i + 1) + ". slot" : SLOT_NAMES[i]));
+        ol.appendChild(li);
+      });
+    }
+    function drawGrid() {
+      var grid = document.getElementById("numgrid");
+      grid.innerHTML = "";
+      var used = taken(active);
+      for (var n = 1; n <= 90; n++) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = n;
+        b.disabled = !!used[n];
+        if (slots[active] === n) b.className = "on";
+        b.addEventListener("click", (function (n) {
+          return function () {
+            slots[active] = slots[active] === n ? null : n;
+            if (slots[active] != null) {
+              var next = slots.findIndex(function (v, k) { return k > active && v == null; });
+              if (next < 0) next = slots.indexOf(null);
+              if (next >= 0) active = next;
+            }
+            setStatus("");
+            drawSlots();
+            drawGrid();
+          };
+        })(n));
+        grid.appendChild(b);
+      }
+    }
+    function describeDate() {
+      var el = document.getElementById("entry-day"), v = dateInput.value;
+      if (!v) { el.textContent = "Tarih seçin."; el.className = "entry-day warn"; return; }
+      var known = base && base.draws.some(function (d) { return d.date === v; });
+      var mine = manual.some(function (d) { return d.date === v; });
+      if (!isDrawDay(v)) { el.textContent = dayName.format(asDate(v)) + ": çekiliş günü değil (Pazartesi, Çarşamba, Cumartesi)."; el.className = "entry-day warn"; return; }
+      el.className = "entry-day" + (known ? " warn" : "");
+      el.textContent = dayName.format(asDate(v)) + " · " + drawNoOf(v) + ". çekiliş" +
+        (known ? " · Bu tarih doğrulanmış verilerde zaten var." : mine ? " · Elle girilmiş kaydın üzerine yazılır." : "");
+    }
+    function nextDrawDate() {
+      var dates = (base ? base.draws : []).concat(manual).map(function (d) { return d.date; }).sort();
+      var t = new Date((dates[dates.length - 1] || isoDay(new Date())) + "T12:00:00Z");
+      do { t.setUTCDate(t.getUTCDate() + 1); } while (!isDrawDay(isoDay(t)));
+      return isoDay(t);
+    }
+    function drawManualList() {
+      var ul = document.getElementById("manual-list");
+      ul.innerHTML = "";
+      manual.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (m) {
+        var li = document.createElement("li");
+        var text = document.createElement("span");
+        var b = document.createElement("b");
+        b.textContent = m.numbers.join(" ");
+        text.appendChild(document.createTextNode(shortDate.format(asDate(m.date)) + ": "));
+        text.appendChild(b);
+        text.appendChild(document.createTextNode(" · J " + (m.joker ?? "–") + " · SS " + (m.superstar ?? "–")));
+        var actions = document.createElement("span");
+        var edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "Düzenle";
+        edit.addEventListener("click", function () {
+          dateInput.value = m.date;
+          slots = m.numbers.concat([m.joker, m.superstar]);
+          active = Math.max(0, slots.indexOf(null));
+          describeDate(); drawSlots(); drawGrid();
+          setStatus(shortDate.format(asDate(m.date)) + " kaydı forma yüklendi.");
+        });
+        var del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "Sil";
+        del.addEventListener("click", function () {
+          if (!confirm(shortDate.format(asDate(m.date)) + " kaydı silinsin mi?")) return;
+          manualCol.doc(m.date).delete()
+            .then(function () { setStatus(shortDate.format(asDate(m.date)) + " kaydı silindi."); })
+            .catch(function (e) { setStatus("Silinemedi: " + (e && e.message || e), true); });
+        });
+        actions.appendChild(edit);
+        actions.appendChild(del);
+        li.appendChild(text);
+        li.appendChild(actions);
+        ul.appendChild(li);
+      });
+    }
+    function entryRefresh() {
+      if (document.getElementById("entry").hidden) return;
+      if (!dateInput.value) dateInput.value = nextDrawDate();
+      describeDate();
+      drawManualList();
+    }
+    document.getElementById("entry-clear").addEventListener("click", function () {
+      slots = new Array(8).fill(null); active = 0;
+      setStatus(""); drawSlots(); drawGrid();
+    });
+    dateInput.addEventListener("change", describeDate);
+    document.getElementById("entry-save").addEventListener("click", function () {
+      var v = dateInput.value;
+      if (!v) return setStatus("Önce tarihi seçin.", true);
+      if (!isDrawDay(v)) return setStatus("Seçilen gün çekiliş günü değil.", true);
+      if (base && base.draws.some(function (d) { return d.date === v; })) return setStatus("Bu tarih doğrulanmış verilerde zaten var; elle kayıt eklenmedi.", true);
+      var empty = slots.map(function (x, i) { return x == null ? SLOT_NAMES[i] : null; }).filter(Boolean);
+      if (empty.length) return setStatus("Boş slot: " + empty.join(", ") + ".", true);
+      var btn = this;
+      btn.disabled = true;
+      manualCol.doc(v).set({
+        numbers: slots.slice(0, 6).sort(function (a, b) { return a - b; }),
+        joker: slots[6], superstar: slots[7], savedAt: new Date().toISOString()
+      }).then(function () {
+        setStatus(shortDate.format(asDate(v)) + " çekilişi kaydedildi.");
+        slots = new Array(8).fill(null); active = 0;
+        dateInput.value = "";
+        drawSlots(); drawGrid();
+      }).catch(function (e) {
+        setStatus("Kaydedilemedi: " + (e && e.message || e), true);
+      }).finally(function () { btn.disabled = false; });
+    });
+
+    if (window.claude && claude.use) {
+      Promise.all([claude.use("db"), claude.use("user")]).then(function (caps) {
+        var db = caps[0], user = caps[1];
+        if (!db) return;
+        manualCol = db.collection("data/loto/manual");
+        manualCol.onSnapshot(function (snap) {
+          manual = snap.docs.map(function (d) { return cleanManual(d.data(), d.id); }).filter(Boolean);
+          if (base) paint(merged());
+          entryRefresh();
+        }, function () {});
+        return user ? user.canEdit() : false;
+      }).then(function (canEdit) {
+        if (!canEdit) return;
+        document.getElementById("entry").hidden = false;
+        drawSlots(); drawGrid(); entryRefresh();
+      }).catch(function () {});
+    }
 
     try { render(JSON.parse(document.getElementById("seed").textContent)); } catch (e) {}
     fetch("data/results.json", { cache: "no-store" })
