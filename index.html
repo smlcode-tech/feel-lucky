@@ -1,0 +1,1530 @@
+<title>Sayısal Loto Sonuçları</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* Layout: tek sütun "çekiliş tahtası" — en son çekiliş büyük tahtada, son üç ayın çekilişleri altında aylara bölünmüş satırlar. */
+  :root {
+    --bg: #eef1f6;
+    --panel: #ffffff;
+    --ink: #141a2b;
+    --muted: #5a6378;
+    --line: #d6dbe6;
+    --ball: #f7f8fb;
+    --ball-shade: #b9c1d3;
+    --joker: #d4372c;
+    --star: #e2a514;
+    --accent: #2b4cc4;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1220; --panel: #161b2d; --ink: #e8ebf3; --muted: #98a0b6; --line: #2a3150;
+      --ball: #f1f3f8; --ball-shade: #8d97b0; --joker: #ef5a4c; --star: #f2bb3a; --accent: #7d97ff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1220; --panel: #161b2d; --ink: #e8ebf3; --muted: #98a0b6; --line: #2a3150;
+    --ball: #f1f3f8; --ball-shade: #8d97b0; --joker: #ef5a4c; --star: #f2bb3a; --accent: #7d97ff;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 56px;
+  }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 28px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 7vw, 56px); line-height: 1.02; margin: 6px 0 0; text-wrap: balance; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; text-wrap: balance; }
+  .when { margin: 10px 0 0; color: var(--muted); font-size: 17px; }
+  .when strong { color: var(--ink); font-weight: 500; }
+
+  .board { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 28px clamp(16px, 4vw, 32px); display: grid; gap: 26px; }
+  .rack-label { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .rack { display: flex; flex-wrap: wrap; gap: clamp(8px, 2vw, 16px); list-style: none; margin: 0; padding: 0; }
+  .ball {
+    --size: clamp(48px, 12vw, 84px);
+    width: var(--size); aspect-ratio: 1; max-width: 100%; border-radius: 50%; flex: none;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 600; font-size: calc(var(--size) * .38); font-variant-numeric: tabular-nums;
+    color: #141a2b;
+    background: radial-gradient(circle at 32% 28%, #ffffff 0 12%, var(--ball) 34%, var(--ball-shade) 100%);
+    box-shadow: inset 0 -6px 12px rgba(20, 26, 43, .18), 0 6px 14px rgba(20, 26, 43, .14);
+  }
+  .board .rack .ball { animation: drop .5s cubic-bezier(.2, .9, .3, 1.25) both; }
+  .board .rack .ball:nth-child(2) { animation-delay: .06s } .board .rack .ball:nth-child(3) { animation-delay: .12s }
+  .board .rack .ball:nth-child(4) { animation-delay: .18s } .board .rack .ball:nth-child(5) { animation-delay: .24s }
+  .board .rack .ball:nth-child(6) { animation-delay: .30s }
+  @keyframes drop { from { transform: translateY(-10px) scale(.92); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .board .rack .ball { animation: none; } }
+
+  .ball.joker { color: #fff; background: radial-gradient(circle at 32% 28%, #ff9d93 0 10%, var(--joker) 45%, #8f1c14 100%); }
+  .ball.star { color: #2a1d00; background: radial-gradient(circle at 32% 28%, #ffe9a8 0 10%, var(--star) 45%, #8a5f00 100%); }
+
+  .extras { display: flex; flex-wrap: wrap; gap: 28px; border-top: 1px dashed var(--line); padding-top: 22px; }
+  .extra { display: flex; align-items: center; gap: 14px; }
+  .extra .ball { --size: clamp(48px, 10vw, 64px); }
+  .extra p { margin: 0; font-family: var(--display); font-weight: 600; font-size: 20px; }
+  .extra small { display: block; font-family: var(--body); font-weight: 400; font-size: 13px; color: var(--muted); }
+  .note { margin: 0; font-size: 15px; color: var(--muted); }
+
+  .history { display: grid; gap: 14px; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+  .filters label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .filters select { font: 500 15px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; }
+  .history-sub { margin: -6px 0 0; color: var(--muted); font-size: 15px; }
+  .row { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 12px 20px; padding-block: 16px; border-bottom: 1px solid var(--line); }
+  .month { padding-block: 22px 6px; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .month:first-child { padding-top: 6px; }
+  .row time { font-weight: 500; }
+  .row time small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .row .set { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+  .row .ball { --size: 40px; box-shadow: inset 0 -3px 6px rgba(20, 26, 43, .18); }
+  .row .sep { width: 1px; height: 28px; background: var(--line); margin-inline: 4px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } .row .ball { --size: 36px; } }
+
+  .predict { background: var(--panel); border: 2px solid var(--accent); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 18px; }
+  .predict-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+  .predict .ball { --size: clamp(44px, 11vw, 72px); }
+  .predict button {
+    font: 500 15px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 999px;
+    padding: 10px 18px; min-height: 44px; cursor: pointer;
+  }
+  .predict button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .pairs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .pairs li { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 14px; color: var(--muted); }
+  .pairs b { display: block; font-family: var(--mono); font-weight: 600; font-size: 15px; color: var(--ink); }
+
+  .entry { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 16px; }
+  .entry[hidden] { display: none; }
+  .date-field { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-weight: 500; }
+  .date-field input { font: 500 16px var(--mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; color-scheme: inherit; }
+  .entry-day { margin: -6px 0 0; font-size: 14px; color: var(--muted); }
+  .entry-day.warn, .entry .status.warn { color: var(--joker); }
+  .slots { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .slots li { display: grid; justify-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .slot { padding: 0; border: 2px dashed var(--ball-shade); cursor: pointer; }
+  .slot.ball { --size: 48px; box-shadow: none; }
+  .slot.empty { background: transparent; color: var(--muted); }
+  .slot[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .slot:not(.empty) { border-style: solid; border-color: transparent; }
+  .numgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .numgrid button {
+    font: 600 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; min-height: 36px; padding: 0; cursor: pointer;
+  }
+  .numgrid button:disabled { opacity: .3; cursor: default; }
+  .numgrid button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .entry-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .entry button.primary { font: 500 15px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
+  .entry button.ghost, .check button.ghost { font: 500 15px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
+  .entry button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .entry .status { margin: 0; font-size: 14px; color: var(--muted); }
+  .manual-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .manual-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; }
+  .manual-list b { font-family: var(--mono); font-weight: 600; }
+  .manual-list button { font: 500 13px var(--body); color: var(--accent); background: none; border: 0; padding: 6px 8px; min-height: 32px; cursor: pointer; }
+  .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+  .check { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 16px; }
+  .check .rack { min-height: 48px; }
+  .check .ball { --size: 48px; }
+  .check-hint { margin: 0; color: var(--muted); font-size: 15px; }
+  .odds { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .odds th, .odds td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  .odds th:first-child, .odds td:first-child { text-align: left; }
+  .odds th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .verdict { margin: 0; font-size: 15px; }
+  .verdict b { font-family: var(--display); font-size: 22px; }
+
+  footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  footer a { color: var(--accent); }
+  .stamp { font-family: var(--mono); font-size: 12px; }
+</style>
+
+<main>
+  <section class="predict" aria-labelledby="predict-title">
+    <div class="predict-head">
+      <div>
+        <p class="eyebrow">Yeni tahmin · ardışık slot çiftleri</p>
+        <h2 id="predict-title">Önerilen 6'lı</h2>
+      </div>
+      <button type="button" id="predict-btn">Yeni 6'lı üret</button>
+    </div>
+    <ol class="rack" id="predict-numbers" aria-live="polite"></ol>
+    <ul class="pairs" id="predict-pairs"></ul>
+    <p class="note" id="predict-note"></p>
+  </section>
+
+  <section class="check" aria-labelledby="check-title">
+    <div>
+      <p class="eyebrow">Kendi kombinasyonun</p>
+      <h2 id="check-title">6'lını değerlendir</h2>
+    </div>
+    <ol class="rack" id="check-picked" aria-label="Seçilen numaralar"></ol>
+    <div class="numgrid" id="check-grid" role="group" aria-label="Numara seç (6 adet)"></div>
+    <div class="entry-actions">
+      <button type="button" class="ghost" id="check-from-predict">Önerilen 6'lıyı al</button>
+      <button type="button" class="ghost" id="check-clear">Temizle</button>
+    </div>
+    <div id="check-result" aria-live="polite"></div>
+  </section>
+
+  <header>
+    <p class="eyebrow">Son çekiliş sonucu</p>
+    <h1 id="game">Çılgın Sayısal Loto</h1>
+    <p class="when" id="when"></p>
+  </header>
+
+  <section class="board" aria-labelledby="nums-label">
+    <div>
+      <p class="rack-label" id="nums-label">Kazanan numaralar</p>
+      <ol class="rack" id="numbers"></ol>
+    </div>
+    <div class="extras">
+      <div class="extra"><span class="ball joker" id="joker"></span><p>Joker<small>7. top</small></p></div>
+      <div class="extra"><span class="ball star" id="superstar"></span><p>SüperStar<small>Ek oyun</small></p></div>
+    </div>
+    <p class="note" id="note"></p>
+  </section>
+
+  <section class="entry" id="entry" hidden aria-labelledby="entry-title">
+    <div>
+      <p class="eyebrow">Elle sonuç girişi</p>
+      <h2 id="entry-title">Yeni çekilişi ekle</h2>
+    </div>
+    <label class="date-field">Çekiliş tarihi <input type="date" id="entry-date" required></label>
+    <p class="entry-day" id="entry-day"></p>
+    <ol class="slots" id="slots" aria-label="Slotlar: 6 numara, Joker, SüperStar"></ol>
+    <div class="numgrid" id="numgrid" role="group" aria-label="Seçili slot için numara"></div>
+    <div class="entry-actions">
+      <button type="button" class="primary" id="entry-save">Kaydet</button>
+      <button type="button" class="ghost" id="entry-clear">Temizle</button>
+    </div>
+    <p class="status" id="entry-status" role="status"></p>
+    <ul class="manual-list" id="manual-list" aria-label="Elle eklenen çekilişler"></ul>
+  </section>
+
+  <section class="history" aria-labelledby="history-title">
+    <h2 id="history-title">Ocak 2021'den bu yana</h2>
+    <div class="filters" role="group" aria-label="Çekilişleri filtrele">
+      <label>Ay <select id="filter-month"><option value="">Tümü</option></select></label>
+      <label>Yıl <select id="filter-year"><option value="">Tümü</option></select></label>
+    </div>
+    <p class="history-sub" id="history-sub"></p>
+    <ol class="rows" id="rows"></ol>
+  </section>
+
+  <footer>
+    <span>Kaynak: <a id="source" href="https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari" target="_blank" rel="noopener">millipiyangoonline.com</a>. Kupon kontrolü için resmi sonuç sayfasını esas alın. Kırmızı top Joker, sarı top SüperStar.</span>
+    <span class="stamp" id="stamp"></span>
+  </footer>
+</main>
+
+<script type="application/json" id="seed">
+{
+ "game": "Çılgın Sayısal Loto",
+ "period": "2021-01-02 – 2026-10-17",
+ "source": "https://www.millipiyangoonline.com/sayisal-loto/cekilis-sonuclari",
+ "method": "manual-crosscheck",
+ "updatedAt": "2026-10-18T18:59:47Z",
+ "draws": [
+  {"date": "2026-10-17", "drawNo": 124, "time": "21:30", "numbers": [6, 19, 39, 59, 75, 85], "joker": 84, "superstar": 7},
+  {"date": "2026-10-14", "drawNo": 123, "time": "21:30", "numbers": [1, 3, 65, 66, 79, 81], "joker": 50, "superstar": 20},
+  {"date": "2026-10-12", "drawNo": 122, "time": "21:30", "numbers": [2, 16, 18, 38, 75, 79], "joker": 46, "superstar": 67},
+  {"date": "2026-10-10", "drawNo": 121, "time": "21:30", "numbers": [14, 26, 35, 45, 47, 57], "joker": 21, "superstar": 82},
+  {"date": "2026-10-07", "drawNo": 120, "time": "21:30", "numbers": [38, 40, 44, 48, 63, 77], "joker": 9, "superstar": 74},
+  {"date": "2026-10-05", "drawNo": 119, "time": "21:30", "numbers": [13, 19, 29, 40, 42, 79], "joker": 90, "superstar": 75},
+  {"date": "2026-10-03", "drawNo": 118, "time": "21:30", "numbers": [1, 7, 18, 25, 40, 64], "joker": 20, "superstar": 66},
+  {"date": "2026-09-30", "drawNo": 117, "time": "21:30", "numbers": [21, 24, 35, 36, 43, 80], "joker": 75, "superstar": 17},
+  {"date": "2026-09-28", "drawNo": 116, "time": "21:30", "numbers": [1, 23, 57, 66, 88, 90], "joker": 3, "superstar": 10},
+  {"date": "2026-09-26", "drawNo": 115, "time": "21:30", "numbers": [35, 42, 44, 64, 70, 87], "joker": 3, "superstar": 87},
+  {"date": "2026-09-23", "drawNo": 114, "time": "21:30", "numbers": [10, 37, 54, 69, 82, 89], "joker": 51, "superstar": 86},
+  {"date": "2026-09-21", "drawNo": 113, "time": "21:30", "numbers": [5, 30, 34, 53, 64, 84], "joker": 18, "superstar": 11},
+  {"date": "2026-09-19", "drawNo": 112, "time": "21:30", "numbers": [3, 6, 9, 23, 50, 89], "joker": 86, "superstar": 66},
+  {"date": "2026-09-16", "drawNo": 111, "time": "21:30", "numbers": [3, 4, 14, 24, 46, 76], "joker": 2, "superstar": 12},
+  {"date": "2026-09-14", "drawNo": 110, "time": "21:30", "numbers": [35, 51, 54, 56, 66, 87], "joker": 9, "superstar": 70},
+  {"date": "2026-09-12", "drawNo": 109, "time": "21:30", "numbers": [3, 10, 23, 24, 67, 75], "joker": 48, "superstar": 36},
+  {"date": "2026-09-09", "drawNo": 108, "time": "21:30", "numbers": [8, 10, 24, 25, 34, 44], "joker": 13, "superstar": 55},
+  {"date": "2026-09-07", "drawNo": 107, "time": "21:30", "numbers": [1, 18, 54, 71, 84, 86], "joker": 5, "superstar": 21},
+  {"date": "2026-09-05", "drawNo": 106, "time": "21:30", "numbers": [12, 49, 65, 73, 78, 85], "joker": 61, "superstar": 63},
+  {"date": "2026-09-02", "drawNo": 105, "time": "21:30", "numbers": [3, 30, 68, 69, 73, 82], "joker": 9, "superstar": 8},
+  {"date": "2026-08-31", "drawNo": 104, "time": "21:30", "numbers": [1, 3, 4, 43, 64, 69], "joker": 58, "superstar": 80},
+  {"date": "2026-08-29", "drawNo": 103, "time": "21:30", "numbers": [21, 46, 49, 77, 85, 86], "joker": 70, "superstar": 58},
+  {"date": "2026-08-26", "drawNo": 102, "time": "21:30", "numbers": [26, 34, 40, 48, 71, 78], "joker": 63, "superstar": 32},
+  {"date": "2026-08-24", "drawNo": 101, "time": "21:30", "numbers": [1, 5, 22, 30, 40, 81], "joker": 67, "superstar": 73},
+  {"date": "2026-08-22", "drawNo": 100, "time": "21:30", "numbers": [25, 41, 53, 58, 63, 79], "joker": 66, "superstar": 76},
+  {"date": "2026-08-19", "drawNo": 99, "time": "21:30", "numbers": [35, 39, 63, 78, 83, 85], "joker": 28, "superstar": 28},
+  {"date": "2026-08-17", "drawNo": 98, "time": "21:30", "numbers": [10, 41, 43, 62, 83, 84], "joker": 11, "superstar": 59},
+  {"date": "2026-08-15", "drawNo": 97, "time": "21:30", "numbers": [15, 40, 51, 55, 78, 81], "joker": 43, "superstar": 35},
+  {"date": "2026-08-12", "drawNo": 96, "time": "21:30", "numbers": [19, 31, 49, 59, 64, 66], "joker": 7, "superstar": 67},
+  {"date": "2026-08-10", "drawNo": 95, "time": "21:30", "numbers": [8, 23, 32, 41, 48, 89], "joker": 34, "superstar": 77},
+  {"date": "2026-08-08", "drawNo": 94, "time": "21:30", "numbers": [8, 22, 23, 47, 49, 72], "joker": 53, "superstar": 12},
+  {"date": "2026-08-05", "drawNo": 93, "time": "21:30", "numbers": [2, 10, 20, 28, 37, 71], "joker": 35, "superstar": 27},
+  {"date": "2026-08-03", "drawNo": 92, "time": "21:30", "numbers": [31, 41, 49, 50, 66, 77], "joker": 78, "superstar": 68},
+  {"date": "2026-08-01", "drawNo": 91, "time": "21:30", "numbers": [9, 21, 66, 76, 80, 84], "joker": 79, "superstar": 70},
+  {"date": "2026-07-29", "drawNo": 90, "time": "21:30", "numbers": [4, 7, 35, 37, 53, 74], "joker": 43, "superstar": 9},
+  {"date": "2026-07-27", "drawNo": 89, "time": "21:30", "numbers": [4, 9, 20, 45, 48, 59], "joker": 66, "superstar": 57},
+  {"date": "2026-07-25", "drawNo": 88, "time": "21:30", "numbers": [12, 18, 64, 74, 78, 80], "joker": 26, "superstar": 89},
+  {"date": "2026-07-22", "drawNo": 87, "time": "21:30", "numbers": [3, 37, 47, 49, 55, 84], "joker": 31, "superstar": 32},
+  {"date": "2026-07-20", "drawNo": 86, "time": "21:30", "numbers": [5, 22, 30, 71, 85, 87], "joker": 75, "superstar": 10},
+  {"date": "2026-07-18", "drawNo": 85, "time": "21:30", "numbers": [19, 21, 31, 41, 44, 65], "joker": 13, "superstar": 44},
+  {"date": "2026-07-15", "drawNo": 84, "time": "21:30", "numbers": [34, 44, 48, 49, 64, 87], "joker": 41, "superstar": 74},
+  {"date": "2026-07-13", "drawNo": 83, "time": "21:30", "numbers": [13, 20, 34, 44, 57, 65], "joker": 89, "superstar": 4},
+  {"date": "2026-07-11", "drawNo": 82, "time": "21:30", "numbers": [36, 46, 58, 61, 67, 72], "joker": 83, "superstar": 15},
+  {"date": "2026-07-08", "drawNo": 81, "time": "21:30", "numbers": [4, 16, 45, 61, 72, 89], "joker": 53, "superstar": 47},
+  {"date": "2026-07-06", "drawNo": 80, "time": "21:30", "numbers": [3, 10, 19, 56, 59, 90], "joker": 51, "superstar": 76},
+  {"date": "2026-07-04", "drawNo": 79, "time": "21:30", "numbers": [20, 38, 61, 84, 85, 86], "joker": 36, "superstar": 39},
+  {"date": "2026-07-01", "drawNo": 78, "time": "21:30", "numbers": [3, 63, 72, 76, 78, 86], "joker": 77, "superstar": 80},
+  {"date": "2026-06-29", "drawNo": 77, "time": "21:30", "numbers": [30, 35, 42, 58, 83, 84], "joker": 55, "superstar": 4},
+  {"date": "2026-06-27", "drawNo": 76, "time": "21:30", "numbers": [12, 22, 28, 37, 88, 89], "joker": 86, "superstar": 54},
+  {"date": "2026-06-24", "drawNo": 75, "time": "21:30", "numbers": [3, 12, 37, 62, 64, 70], "joker": 61, "superstar": 10},
+  {"date": "2026-06-22", "drawNo": 74, "time": "21:30", "numbers": [2, 17, 28, 31, 50, 77], "joker": 61, "superstar": 24},
+  {"date": "2026-06-20", "drawNo": 73, "time": "21:30", "numbers": [13, 21, 27, 44, 79, 90], "joker": 4, "superstar": 36},
+  {"date": "2026-06-17", "drawNo": 72, "time": "21:30", "numbers": [7, 18, 22, 55, 76, 79], "joker": 31, "superstar": 45},
+  {"date": "2026-06-15", "drawNo": 71, "time": "21:30", "numbers": [15, 33, 36, 53, 79, 87], "joker": 78, "superstar": 25},
+  {"date": "2026-06-13", "drawNo": 70, "time": "21:30", "numbers": [2, 16, 25, 35, 80, 88], "joker": 40, "superstar": 53},
+  {"date": "2026-06-10", "drawNo": 69, "time": "21:30", "numbers": [10, 15, 25, 31, 45, 56], "joker": 67, "superstar": 50},
+  {"date": "2026-06-08", "drawNo": 68, "time": "21:30", "numbers": [28, 30, 39, 48, 55, 68], "joker": 87, "superstar": 80},
+  {"date": "2026-06-06", "drawNo": 67, "time": "21:30", "numbers": [8, 33, 50, 53, 62, 63], "joker": 39, "superstar": 8},
+  {"date": "2026-06-03", "drawNo": 66, "time": "21:30", "numbers": [2, 15, 17, 55, 78, 83], "joker": 77, "superstar": 66},
+  {"date": "2026-06-01", "drawNo": 65, "time": "21:30", "numbers": [19, 36, 46, 63, 75, 85], "joker": 80, "superstar": 39},
+  {"date": "2026-05-30", "drawNo": 64, "time": "21:30", "numbers": [42, 44, 50, 72, 77, 83], "joker": 25, "superstar": 59},
+  {"date": "2026-05-27", "drawNo": 63, "time": "21:30", "numbers": [7, 52, 58, 69, 82, 84], "joker": 37, "superstar": 7},
+  {"date": "2026-05-25", "drawNo": 62, "time": "21:30", "numbers": [15, 28, 40, 42, 72, 81], "joker": 25, "superstar": 33},
+  {"date": "2026-05-23", "drawNo": 61, "time": "21:30", "numbers": [19, 20, 28, 53, 68, 77], "joker": 47, "superstar": 57},
+  {"date": "2026-05-20", "drawNo": 60, "time": "21:30", "numbers": [2, 24, 35, 74, 82, 89], "joker": 67, "superstar": 9},
+  {"date": "2026-05-18", "drawNo": 59, "time": "21:30", "numbers": [22, 35, 71, 75, 85, 89], "joker": 30, "superstar": 40},
+  {"date": "2026-05-16", "drawNo": 58, "time": "21:30", "numbers": [2, 8, 55, 73, 79, 88], "joker": 47, "superstar": 61},
+  {"date": "2026-05-13", "drawNo": 57, "time": "21:30", "numbers": [6, 39, 41, 59, 70, 89], "joker": 21, "superstar": 24},
+  {"date": "2026-05-11", "drawNo": 56, "time": "21:30", "numbers": [18, 36, 38, 48, 53, 81], "joker": 74, "superstar": 15},
+  {"date": "2026-05-09", "drawNo": 55, "time": "21:30", "numbers": [17, 25, 28, 53, 72, 79], "joker": 61, "superstar": 45},
+  {"date": "2026-05-06", "drawNo": 54, "time": "21:30", "numbers": [18, 30, 50, 55, 72, 82], "joker": 40, "superstar": 84},
+  {"date": "2026-05-04", "drawNo": 53, "time": "21:30", "numbers": [7, 12, 35, 47, 60, 82], "joker": 15, "superstar": 77},
+  {"date": "2026-05-02", "drawNo": 52, "time": "21:30", "numbers": [3, 37, 62, 64, 70, 87], "joker": 47, "superstar": 4},
+  {"date": "2026-04-29", "drawNo": 51, "time": "21:30", "numbers": [38, 64, 68, 78, 84, 88], "joker": 70, "superstar": 73},
+  {"date": "2026-04-27", "drawNo": 50, "time": "21:30", "numbers": [11, 19, 27, 34, 35, 81], "joker": 29, "superstar": 70},
+  {"date": "2026-04-25", "drawNo": 49, "time": "21:30", "numbers": [10, 27, 63, 64, 70, 90], "joker": 61, "superstar": 10},
+  {"date": "2026-04-22", "drawNo": 48, "time": "21:30", "numbers": [12, 17, 38, 48, 64, 68], "joker": 84, "superstar": 27},
+  {"date": "2026-04-20", "drawNo": 47, "time": "21:30", "numbers": [28, 33, 53, 78, 83, 88], "joker": 21, "superstar": 63},
+  {"date": "2026-04-18", "drawNo": 46, "time": "21:30", "numbers": [3, 6, 38, 48, 66, 69], "joker": 89, "superstar": 85},
+  {"date": "2026-04-15", "drawNo": 45, "time": "21:30", "numbers": [4, 35, 48, 56, 64, 76], "joker": 46, "superstar": 39},
+  {"date": "2026-04-13", "drawNo": 44, "time": "21:30", "numbers": [3, 13, 24, 48, 76, 81], "joker": 74, "superstar": 9},
+  {"date": "2026-04-11", "drawNo": 43, "time": "21:30", "numbers": [2, 9, 30, 45, 50, 52], "joker": 37, "superstar": 90},
+  {"date": "2026-04-08", "drawNo": 42, "time": "21:30", "numbers": [5, 13, 26, 42, 62, 80], "joker": 87, "superstar": 56},
+  {"date": "2026-04-06", "drawNo": 41, "time": "21:30", "numbers": [40, 43, 50, 55, 69, 75], "joker": 62, "superstar": 11},
+  {"date": "2026-04-04", "drawNo": 40, "time": "21:30", "numbers": [19, 29, 42, 59, 72, 82], "joker": 27, "superstar": 68},
+  {"date": "2026-04-01", "drawNo": 39, "time": "21:30", "numbers": [9, 29, 33, 56, 64, 74], "joker": 12, "superstar": 70},
+  {"date": "2026-03-30", "drawNo": 38, "time": "21:30", "numbers": [4, 16, 23, 63, 66, 76], "joker": 48, "superstar": 76},
+  {"date": "2026-03-28", "drawNo": 37, "time": "21:30", "numbers": [4, 5, 7, 17, 63, 72], "joker": 86, "superstar": 45},
+  {"date": "2026-03-25", "drawNo": 36, "time": "21:30", "numbers": [14, 19, 40, 41, 43, 78], "joker": 46, "superstar": 80},
+  {"date": "2026-03-23", "drawNo": 35, "time": "21:30", "numbers": [20, 28, 31, 45, 67, 68], "joker": 24, "superstar": 46},
+  {"date": "2026-03-21", "drawNo": 34, "time": "21:30", "numbers": [6, 13, 26, 47, 67, 71], "joker": 89, "superstar": 38},
+  {"date": "2026-03-18", "drawNo": 33, "time": "21:30", "numbers": [10, 12, 35, 53, 55, 86], "joker": 89, "superstar": 75},
+  {"date": "2026-03-16", "drawNo": 32, "time": "21:30", "numbers": [23, 38, 47, 61, 78, 83], "joker": 81, "superstar": 40},
+  {"date": "2026-03-14", "drawNo": 31, "time": "21:30", "numbers": [24, 32, 40, 43, 46, 77], "joker": 17, "superstar": 87},
+  {"date": "2026-03-11", "drawNo": 30, "time": "21:30", "numbers": [24, 29, 52, 57, 64, 71], "joker": 53, "superstar": 65},
+  {"date": "2026-03-09", "drawNo": 29, "time": "21:30", "numbers": [7, 23, 38, 55, 57, 90], "joker": 87, "superstar": 29},
+  {"date": "2026-03-07", "drawNo": 28, "time": "21:30", "numbers": [12, 32, 57, 67, 80, 82], "joker": 22, "superstar": 48},
+  {"date": "2026-03-04", "drawNo": 27, "time": "21:30", "numbers": [44, 46, 60, 67, 87, 88], "joker": 21, "superstar": 32},
+  {"date": "2026-03-02", "drawNo": 26, "time": "21:30", "numbers": [18, 26, 29, 58, 65, 80], "joker": 21, "superstar": 8},
+  {"date": "2026-02-28", "drawNo": 25, "time": "21:30", "numbers": [2, 21, 22, 44, 48, 81], "joker": 42, "superstar": 66},
+  {"date": "2026-02-25", "drawNo": 24, "time": "21:30", "numbers": [4, 14, 27, 33, 41, 84], "joker": 68, "superstar": 83},
+  {"date": "2026-02-23", "drawNo": 23, "time": "21:30", "numbers": [6, 7, 10, 11, 39, 55], "joker": 70, "superstar": 1},
+  {"date": "2026-02-21", "drawNo": 22, "time": "21:30", "numbers": [31, 35, 66, 68, 71, 82], "joker": 15, "superstar": 54},
+  {"date": "2026-02-18", "drawNo": 21, "time": "21:30", "numbers": [13, 19, 50, 55, 62, 82], "joker": 90, "superstar": 77},
+  {"date": "2026-02-16", "drawNo": 20, "time": "21:30", "numbers": [1, 3, 8, 33, 49, 71], "joker": 64, "superstar": 57},
+  {"date": "2026-02-14", "drawNo": 19, "time": "21:30", "numbers": [15, 26, 41, 50, 74, 76], "joker": 1, "superstar": 9},
+  {"date": "2026-02-11", "drawNo": 18, "time": "21:30", "numbers": [34, 45, 66, 73, 74, 79], "joker": 29, "superstar": 9},
+  {"date": "2026-02-09", "drawNo": 17, "time": "21:30", "numbers": [45, 67, 74, 77, 87, 89], "joker": 37, "superstar": 30},
+  {"date": "2026-02-07", "drawNo": 16, "time": "21:30", "numbers": [8, 30, 65, 67, 72, 80], "joker": 26, "superstar": 62},
+  {"date": "2026-02-04", "drawNo": 15, "time": "21:30", "numbers": [8, 46, 50, 52, 67, 69], "joker": 64, "superstar": 21},
+  {"date": "2026-02-02", "drawNo": 14, "time": "21:30", "numbers": [21, 42, 51, 53, 57, 74], "joker": 69, "superstar": 27},
+  {"date": "2026-01-31", "drawNo": 13, "time": "21:30", "numbers": [16, 28, 31, 41, 59, 74], "joker": 35, "superstar": 86},
+  {"date": "2026-01-28", "drawNo": 12, "time": "21:30", "numbers": [6, 42, 67, 74, 78, 83], "joker": 2, "superstar": 30},
+  {"date": "2026-01-26", "drawNo": 11, "time": "21:30", "numbers": [14, 22, 27, 40, 51, 70], "joker": 57, "superstar": 81},
+  {"date": "2026-01-24", "drawNo": 10, "time": "21:30", "numbers": [6, 24, 30, 40, 63, 78], "joker": 9, "superstar": 81},
+  {"date": "2026-01-21", "drawNo": 9, "time": "21:30", "numbers": [6, 23, 40, 50, 71, 89], "joker": 4, "superstar": 67},
+  {"date": "2026-01-19", "drawNo": 8, "time": "21:30", "numbers": [2, 21, 27, 62, 74, 81], "joker": 33, "superstar": 84},
+  {"date": "2026-01-17", "drawNo": 7, "time": "21:30", "numbers": [10, 26, 28, 57, 65, 82], "joker": 34, "superstar": 70},
+  {"date": "2026-01-14", "drawNo": 6, "time": "21:30", "numbers": [2, 3, 8, 41, 68, 90], "joker": null, "superstar": null},
+  {"date": "2026-01-12", "drawNo": 5, "time": "21:30", "numbers": [6, 31, 38, 51, 66, 68], "joker": 88, "superstar": 64},
+  {"date": "2026-01-10", "drawNo": 4, "time": "21:30", "numbers": [3, 23, 55, 59, 69, 82], "joker": 36, "superstar": 80},
+  {"date": "2026-01-07", "drawNo": 3, "time": "21:30", "numbers": [13, 24, 44, 79, 80, 89], "joker": 39, "superstar": 44},
+  {"date": "2026-01-05", "drawNo": 2, "time": "21:30", "numbers": [4, 12, 37, 50, 64, 89], "joker": 41, "superstar": 7},
+  {"date": "2026-01-03", "drawNo": 1, "time": "21:30", "numbers": [30, 47, 58, 68, 70, 78], "joker": 37, "superstar": 89},
+  {"date": "2025-12-31", "drawNo": 157, "time": "21:30", "numbers": [13, 14, 19, 25, 32, 45], "joker": 23, "superstar": 42},
+  {"date": "2025-12-29", "drawNo": 156, "time": "21:30", "numbers": [36, 57, 59, 67, 80, 85], "joker": 18, "superstar": 49},
+  {"date": "2025-12-27", "drawNo": 155, "time": "21:30", "numbers": [9, 13, 29, 41, 74, 82], "joker": 39, "superstar": 51},
+  {"date": "2025-12-24", "drawNo": 154, "time": "21:30", "numbers": [13, 24, 30, 40, 60, 75], "joker": 47, "superstar": 42},
+  {"date": "2025-12-22", "drawNo": 153, "time": "21:30", "numbers": [19, 24, 41, 44, 56, 71], "joker": 23, "superstar": 26},
+  {"date": "2025-12-20", "drawNo": 152, "time": "21:30", "numbers": [5, 27, 52, 64, 73, 83], "joker": 44, "superstar": 9},
+  {"date": "2025-12-17", "drawNo": 151, "time": "21:30", "numbers": [3, 6, 8, 28, 55, 82], "joker": 17, "superstar": 21},
+  {"date": "2025-12-15", "drawNo": 150, "time": "21:30", "numbers": [2, 3, 17, 48, 68, 82], "joker": 29, "superstar": 48},
+  {"date": "2025-12-13", "drawNo": 149, "time": "21:30", "numbers": [7, 57, 67, 70, 74, 86], "joker": 4, "superstar": 22},
+  {"date": "2025-12-10", "drawNo": 148, "time": "21:30", "numbers": [30, 38, 43, 54, 62, 71], "joker": 74, "superstar": 39},
+  {"date": "2025-12-08", "drawNo": 147, "time": "21:30", "numbers": [8, 29, 38, 73, 76, 88], "joker": 13, "superstar": 68},
+  {"date": "2025-12-06", "drawNo": 146, "time": "21:30", "numbers": [14, 38, 56, 73, 74, 87], "joker": 29, "superstar": 81},
+  {"date": "2025-12-03", "drawNo": 145, "time": "21:30", "numbers": [2, 6, 19, 47, 53, 62], "joker": 56, "superstar": 45},
+  {"date": "2025-12-01", "drawNo": 144, "time": "21:30", "numbers": [16, 33, 61, 63, 72, 84], "joker": 60, "superstar": 9},
+  {"date": "2025-11-29", "drawNo": 143, "time": "21:30", "numbers": [7, 20, 32, 41, 56, 72], "joker": 44, "superstar": 19},
+  {"date": "2025-11-26", "drawNo": 142, "time": "21:30", "numbers": [14, 23, 24, 27, 49, 85], "joker": 22, "superstar": 59},
+  {"date": "2025-11-24", "drawNo": 141, "time": "21:30", "numbers": [24, 34, 59, 60, 61, 70], "joker": 53, "superstar": 45},
+  {"date": "2025-11-22", "drawNo": 140, "time": "21:30", "numbers": [18, 32, 35, 72, 80, 87], "joker": 85, "superstar": 87},
+  {"date": "2025-11-19", "drawNo": 139, "time": "21:30", "numbers": [5, 15, 59, 61, 82, 86], "joker": 62, "superstar": 69},
+  {"date": "2025-11-17", "drawNo": 138, "time": "21:30", "numbers": [17, 27, 31, 32, 43, 65], "joker": 26, "superstar": 48},
+  {"date": "2025-11-15", "drawNo": 137, "time": "21:30", "numbers": [33, 43, 46, 66, 72, 90], "joker": 35, "superstar": 85},
+  {"date": "2025-11-12", "drawNo": 136, "time": "21:30", "numbers": [1, 8, 25, 38, 71, 83], "joker": 80, "superstar": 47},
+  {"date": "2025-11-10", "drawNo": 135, "time": "21:30", "numbers": [2, 16, 32, 75, 76, 86], "joker": 23, "superstar": 55},
+  {"date": "2025-11-08", "drawNo": 134, "time": "21:30", "numbers": [4, 18, 39, 87, 89, 90], "joker": 14, "superstar": 54},
+  {"date": "2025-11-05", "drawNo": 133, "time": "21:30", "numbers": [14, 45, 49, 68, 79, 81], "joker": 58, "superstar": 90},
+  {"date": "2025-11-03", "drawNo": 132, "time": "21:30", "numbers": [7, 14, 16, 20, 27, 62], "joker": 81, "superstar": 9},
+  {"date": "2025-11-01", "drawNo": 131, "time": "21:30", "numbers": [33, 45, 47, 50, 72, 76], "joker": 80, "superstar": 51},
+  {"date": "2025-10-29", "drawNo": 130, "time": "21:30", "numbers": [2, 6, 12, 18, 36, 53], "joker": 75, "superstar": 23},
+  {"date": "2025-10-27", "drawNo": 129, "time": "21:30", "numbers": [4, 6, 25, 45, 57, 62], "joker": 88, "superstar": 15},
+  {"date": "2025-10-25", "drawNo": 128, "time": "21:30", "numbers": [16, 20, 27, 46, 57, 79], "joker": 53, "superstar": 12},
+  {"date": "2025-10-22", "drawNo": 127, "time": "21:30", "numbers": [1, 7, 10, 15, 33, 71], "joker": 4, "superstar": 45},
+  {"date": "2025-10-20", "drawNo": 126, "time": "21:30", "numbers": [1, 29, 43, 53, 75, 88], "joker": 90, "superstar": 70},
+  {"date": "2025-10-18", "drawNo": 125, "time": "21:30", "numbers": [10, 13, 18, 39, 63, 85], "joker": 60, "superstar": 88},
+  {"date": "2025-10-15", "drawNo": 124, "time": "21:30", "numbers": [2, 10, 53, 73, 77, 90], "joker": 36, "superstar": 71},
+  {"date": "2025-10-13", "drawNo": 123, "time": "21:30", "numbers": [24, 36, 50, 63, 65, 68], "joker": 71, "superstar": 19},
+  {"date": "2025-10-11", "drawNo": 122, "time": "21:30", "numbers": [6, 12, 15, 16, 19, 55], "joker": 32, "superstar": 86},
+  {"date": "2025-10-08", "drawNo": 121, "time": "21:30", "numbers": [4, 27, 37, 41, 48, 73], "joker": 76, "superstar": 70},
+  {"date": "2025-10-06", "drawNo": 120, "time": "21:30", "numbers": [23, 31, 41, 48, 58, 75], "joker": 60, "superstar": 14},
+  {"date": "2025-10-04", "drawNo": 119, "time": "21:30", "numbers": [8, 12, 15, 23, 34, 56], "joker": 58, "superstar": 75},
+  {"date": "2025-10-01", "drawNo": 118, "time": "21:30", "numbers": [4, 28, 40, 54, 57, 65], "joker": 14, "superstar": 44},
+  {"date": "2025-09-29", "drawNo": 117, "time": "21:30", "numbers": [14, 35, 57, 70, 76, 83], "joker": 36, "superstar": 63},
+  {"date": "2025-09-27", "drawNo": 116, "time": "21:30", "numbers": [6, 32, 43, 49, 77, 87], "joker": 29, "superstar": 52},
+  {"date": "2025-09-24", "drawNo": 115, "time": "21:30", "numbers": [18, 48, 53, 61, 64, 65], "joker": 31, "superstar": 32},
+  {"date": "2025-09-22", "drawNo": 114, "time": "21:30", "numbers": [39, 59, 62, 68, 76, 77], "joker": 23, "superstar": 5},
+  {"date": "2025-09-20", "drawNo": 113, "time": "21:30", "numbers": [14, 24, 49, 60, 61, 83], "joker": 6, "superstar": 35},
+  {"date": "2025-09-17", "drawNo": 112, "time": "21:30", "numbers": [5, 25, 61, 73, 74, 82], "joker": 68, "superstar": 52},
+  {"date": "2025-09-15", "drawNo": 111, "time": "21:30", "numbers": [7, 23, 39, 41, 47, 82], "joker": 40, "superstar": 77},
+  {"date": "2025-09-13", "drawNo": 110, "time": "21:30", "numbers": [3, 35, 39, 40, 49, 90], "joker": 4, "superstar": 67},
+  {"date": "2025-09-10", "drawNo": 109, "time": "21:30", "numbers": [5, 32, 36, 58, 64, 68], "joker": 10, "superstar": 68},
+  {"date": "2025-09-08", "drawNo": 108, "time": "21:30", "numbers": [2, 3, 12, 36, 39, 87], "joker": 29, "superstar": 51},
+  {"date": "2025-09-06", "drawNo": 107, "time": "21:30", "numbers": [7, 19, 29, 30, 32, 33], "joker": 60, "superstar": 64},
+  {"date": "2025-09-03", "drawNo": 106, "time": "21:30", "numbers": [27, 35, 39, 57, 61, 88], "joker": 69, "superstar": 9},
+  {"date": "2025-09-01", "drawNo": 105, "time": "21:30", "numbers": [5, 7, 14, 23, 26, 33], "joker": 85, "superstar": 21},
+  {"date": "2025-08-30", "drawNo": 104, "time": "21:30", "numbers": [34, 37, 51, 62, 70, 80], "joker": 12, "superstar": 44},
+  {"date": "2025-08-27", "drawNo": 103, "time": "21:30", "numbers": [5, 6, 7, 44, 72, 79], "joker": 11, "superstar": 67},
+  {"date": "2025-08-25", "drawNo": 102, "time": "21:30", "numbers": [2, 40, 44, 50, 56, 77], "joker": 89, "superstar": 3},
+  {"date": "2025-08-23", "drawNo": 101, "time": "21:30", "numbers": [4, 10, 36, 45, 65, 83], "joker": 84, "superstar": 41},
+  {"date": "2025-08-20", "drawNo": 100, "time": "21:30", "numbers": [5, 23, 24, 29, 33, 53], "joker": 14, "superstar": 88},
+  {"date": "2025-08-18", "drawNo": 99, "time": "21:30", "numbers": [24, 37, 45, 55, 60, 62], "joker": 68, "superstar": 86},
+  {"date": "2025-08-16", "drawNo": 98, "time": "21:30", "numbers": [20, 45, 46, 50, 62, 80], "joker": 54, "superstar": 87},
+  {"date": "2025-08-13", "drawNo": 97, "time": "21:30", "numbers": [4, 6, 12, 30, 67, 70], "joker": 56, "superstar": 83},
+  {"date": "2025-08-09", "drawNo": 95, "time": "21:30", "numbers": [6, 18, 20, 38, 62, 85], "joker": 81, "superstar": 66},
+  {"date": "2025-08-06", "drawNo": 94, "time": "21:30", "numbers": [22, 36, 43, 46, 80, 88], "joker": 21, "superstar": 21},
+  {"date": "2025-08-04", "drawNo": 93, "time": "21:30", "numbers": [12, 20, 39, 48, 59, 62], "joker": 51, "superstar": 40},
+  {"date": "2025-08-02", "drawNo": 92, "time": "21:30", "numbers": [4, 5, 13, 22, 33, 35], "joker": 53, "superstar": 42},
+  {"date": "2025-07-30", "drawNo": 91, "time": "21:30", "numbers": [12, 19, 50, 58, 62, 73], "joker": 36, "superstar": 77},
+  {"date": "2025-07-28", "drawNo": 90, "time": "21:30", "numbers": [7, 10, 19, 30, 41, 59], "joker": 3, "superstar": 7},
+  {"date": "2025-07-26", "drawNo": 89, "time": "21:30", "numbers": [26, 38, 41, 45, 70, 73], "joker": 7, "superstar": 20},
+  {"date": "2025-07-23", "drawNo": 88, "time": "21:30", "numbers": [4, 29, 52, 58, 72, 83], "joker": 7, "superstar": 4},
+  {"date": "2025-07-21", "drawNo": 87, "time": "21:30", "numbers": [12, 48, 51, 71, 76, 78], "joker": 46, "superstar": 89},
+  {"date": "2025-07-19", "drawNo": 86, "time": "21:30", "numbers": [5, 7, 15, 22, 25, 74], "joker": 46, "superstar": 83},
+  {"date": "2025-07-16", "drawNo": 85, "time": "21:30", "numbers": [9, 22, 47, 49, 55, 73], "joker": 19, "superstar": 19},
+  {"date": "2025-07-14", "drawNo": 84, "time": "21:30", "numbers": [12, 27, 34, 37, 41, 47], "joker": 64, "superstar": 49},
+  {"date": "2025-07-12", "drawNo": 83, "time": "21:30", "numbers": [8, 17, 60, 73, 84, 90], "joker": 83, "superstar": 59},
+  {"date": "2025-07-09", "drawNo": 82, "time": "21:30", "numbers": [4, 13, 36, 48, 53, 80], "joker": 51, "superstar": 5},
+  {"date": "2025-07-07", "drawNo": 81, "time": "21:30", "numbers": [8, 18, 61, 71, 75, 79], "joker": 10, "superstar": 41},
+  {"date": "2025-07-05", "drawNo": 80, "time": "21:30", "numbers": [11, 12, 27, 71, 76, 87], "joker": 38, "superstar": 57},
+  {"date": "2025-07-02", "drawNo": 79, "time": "21:30", "numbers": [5, 38, 65, 68, 69, 75], "joker": 86, "superstar": 54},
+  {"date": "2025-06-28", "drawNo": 77, "time": "21:30", "numbers": [15, 22, 27, 38, 56, 71], "joker": 30, "superstar": 89},
+  {"date": "2025-06-25", "drawNo": 76, "time": "21:30", "numbers": [7, 20, 25, 28, 78, 88], "joker": 51, "superstar": 14},
+  {"date": "2025-06-23", "drawNo": 75, "time": "21:30", "numbers": [4, 8, 12, 24, 30, 54], "joker": 34, "superstar": 23},
+  {"date": "2025-06-21", "drawNo": 74, "time": "21:30", "numbers": [3, 13, 16, 25, 50, 84], "joker": 4, "superstar": 28},
+  {"date": "2025-06-18", "drawNo": 73, "time": "21:30", "numbers": [37, 39, 48, 54, 85, 90], "joker": 55, "superstar": 10},
+  {"date": "2025-06-16", "drawNo": 72, "time": "21:30", "numbers": [7, 12, 27, 53, 72, 77], "joker": 19, "superstar": 86},
+  {"date": "2025-06-14", "drawNo": 71, "time": "21:30", "numbers": [28, 35, 60, 76, 80, 88], "joker": 19, "superstar": 48},
+  {"date": "2025-06-11", "drawNo": 70, "time": "21:30", "numbers": [31, 42, 65, 76, 81, 87], "joker": 36, "superstar": 90},
+  {"date": "2025-06-09", "drawNo": 69, "time": "21:30", "numbers": [40, 54, 55, 60, 80, 84], "joker": 77, "superstar": 11},
+  {"date": "2025-06-07", "drawNo": 68, "time": "21:30", "numbers": [8, 12, 18, 22, 25, 32], "joker": 9, "superstar": 50},
+  {"date": "2025-06-04", "drawNo": 67, "time": "21:30", "numbers": [4, 35, 41, 46, 75, 80], "joker": 25, "superstar": 53},
+  {"date": "2025-06-02", "drawNo": 66, "time": "21:30", "numbers": [16, 29, 46, 61, 80, 87], "joker": 6, "superstar": 14},
+  {"date": "2025-05-31", "drawNo": 65, "time": "21:30", "numbers": [7, 14, 23, 53, 57, 87], "joker": 22, "superstar": 38},
+  {"date": "2025-05-28", "drawNo": 64, "time": "21:30", "numbers": [35, 37, 49, 60, 72, 89], "joker": 34, "superstar": 31},
+  {"date": "2025-05-26", "drawNo": 63, "time": "21:30", "numbers": [26, 30, 45, 70, 78, 88], "joker": 12, "superstar": 59},
+  {"date": "2025-05-24", "drawNo": 62, "time": "21:30", "numbers": [38, 40, 49, 55, 61, 77], "joker": 1, "superstar": 54},
+  {"date": "2025-05-21", "drawNo": 61, "time": "21:30", "numbers": [16, 34, 41, 63, 71, 82], "joker": 59, "superstar": 67},
+  {"date": "2025-05-19", "drawNo": 60, "time": "21:30", "numbers": [6, 22, 58, 84, 87, 90], "joker": 62, "superstar": 72},
+  {"date": "2025-05-17", "drawNo": 59, "time": "21:30", "numbers": [22, 25, 37, 40, 80, 88], "joker": 27, "superstar": 80},
+  {"date": "2025-05-14", "drawNo": 58, "time": "21:30", "numbers": [5, 11, 21, 29, 45, 72], "joker": 3, "superstar": 72},
+  {"date": "2025-05-12", "drawNo": 57, "time": "21:30", "numbers": [24, 30, 58, 79, 87, 90], "joker": 67, "superstar": 66},
+  {"date": "2025-05-10", "drawNo": 56, "time": "21:30", "numbers": [6, 29, 32, 60, 62, 72], "joker": 44, "superstar": 27},
+  {"date": "2025-05-07", "drawNo": 55, "time": "21:30", "numbers": [10, 27, 33, 49, 50, 61], "joker": 74, "superstar": 73},
+  {"date": "2025-05-05", "drawNo": 54, "time": "21:30", "numbers": [8, 25, 33, 42, 50, 51], "joker": 81, "superstar": 16},
+  {"date": "2025-05-03", "drawNo": 53, "time": "21:30", "numbers": [5, 11, 15, 30, 66, 86], "joker": null, "superstar": null},
+  {"date": "2025-04-30", "drawNo": 52, "time": "21:30", "numbers": [1, 10, 56, 66, 67, 78], "joker": 14, "superstar": 27},
+  {"date": "2025-04-28", "drawNo": 51, "time": "21:30", "numbers": [15, 34, 53, 63, 64, 88], "joker": 28, "superstar": 46},
+  {"date": "2025-04-26", "drawNo": 50, "time": "21:30", "numbers": [1, 5, 18, 33, 47, 56], "joker": 85, "superstar": 66},
+  {"date": "2025-04-23", "drawNo": 49, "time": "21:30", "numbers": [33, 41, 66, 74, 80, 81], "joker": 85, "superstar": 45},
+  {"date": "2025-04-21", "drawNo": 48, "time": "21:30", "numbers": [13, 31, 37, 42, 77, 80], "joker": 79, "superstar": 33},
+  {"date": "2025-04-19", "drawNo": 47, "time": "21:30", "numbers": [31, 43, 52, 53, 63, 66], "joker": 2, "superstar": 2},
+  {"date": "2025-04-16", "drawNo": 46, "time": "21:30", "numbers": [11, 18, 40, 43, 59, 88], "joker": 49, "superstar": 68},
+  {"date": "2025-04-14", "drawNo": 45, "time": "21:30", "numbers": [38, 40, 41, 45, 49, 69], "joker": 43, "superstar": 50},
+  {"date": "2025-04-12", "drawNo": 44, "time": "21:30", "numbers": [11, 26, 35, 48, 53, 57], "joker": 51, "superstar": 51},
+  {"date": "2025-04-09", "drawNo": 43, "time": "21:30", "numbers": [12, 14, 15, 66, 76, 77], "joker": 13, "superstar": 88},
+  {"date": "2025-04-07", "drawNo": 42, "time": "21:30", "numbers": [1, 9, 13, 20, 66, 79], "joker": 45, "superstar": 75},
+  {"date": "2025-04-05", "drawNo": 41, "time": "21:30", "numbers": [8, 38, 53, 75, 84, 90], "joker": 31, "superstar": 30},
+  {"date": "2025-04-02", "drawNo": 40, "time": "21:30", "numbers": [19, 20, 36, 48, 53, 66], "joker": 77, "superstar": 71},
+  {"date": "2025-03-31", "drawNo": 39, "time": "21:30", "numbers": [3, 18, 19, 23, 27, 87], "joker": 29, "superstar": 23},
+  {"date": "2025-03-29", "drawNo": 38, "time": "21:30", "numbers": [27, 45, 59, 67, 79, 84], "joker": 77, "superstar": 24},
+  {"date": "2025-03-26", "drawNo": 37, "time": "21:30", "numbers": [5, 9, 29, 30, 31, 63], "joker": 35, "superstar": 38},
+  {"date": "2025-03-24", "drawNo": 36, "time": "21:30", "numbers": [8, 18, 21, 41, 43, 73], "joker": 59, "superstar": 66},
+  {"date": "2025-03-22", "drawNo": 35, "time": "21:30", "numbers": [11, 12, 33, 47, 49, 70], "joker": 63, "superstar": 17},
+  {"date": "2025-03-19", "drawNo": 34, "time": "21:30", "numbers": [13, 39, 59, 70, 73, 80], "joker": 31, "superstar": 45},
+  {"date": "2025-03-17", "drawNo": 33, "time": "21:30", "numbers": [7, 28, 30, 59, 62, 77], "joker": 74, "superstar": 28},
+  {"date": "2025-03-15", "drawNo": 32, "time": "21:30", "numbers": [15, 18, 24, 29, 61, 75], "joker": 82, "superstar": 24},
+  {"date": "2025-03-12", "drawNo": 31, "time": "21:30", "numbers": [37, 47, 57, 62, 75, 90], "joker": 87, "superstar": 31},
+  {"date": "2025-03-10", "drawNo": 30, "time": "21:30", "numbers": [2, 9, 28, 43, 59, 61], "joker": 74, "superstar": 56},
+  {"date": "2025-03-08", "drawNo": 29, "time": "21:30", "numbers": [7, 31, 37, 65, 79, 87], "joker": 90, "superstar": 41},
+  {"date": "2025-03-05", "drawNo": 28, "time": "21:30", "numbers": [30, 32, 48, 65, 82, 85], "joker": 64, "superstar": 14},
+  {"date": "2025-03-03", "drawNo": 27, "time": "21:30", "numbers": [2, 8, 18, 27, 67, 87], "joker": 55, "superstar": 82},
+  {"date": "2025-03-01", "drawNo": 26, "time": "21:30", "numbers": [38, 42, 62, 66, 75, 77], "joker": 78, "superstar": 61},
+  {"date": "2025-02-26", "drawNo": 25, "time": "21:30", "numbers": [10, 52, 65, 73, 87, 88], "joker": 45, "superstar": 42},
+  {"date": "2025-02-24", "drawNo": 24, "time": "21:30", "numbers": [1, 23, 40, 43, 53, 59], "joker": 37, "superstar": 71},
+  {"date": "2025-02-22", "drawNo": 23, "time": "21:30", "numbers": [1, 5, 29, 36, 54, 57], "joker": 35, "superstar": 4},
+  {"date": "2025-02-19", "drawNo": 22, "time": "21:30", "numbers": [26, 42, 69, 70, 74, 88], "joker": 45, "superstar": 66},
+  {"date": "2025-02-17", "drawNo": 21, "time": "21:30", "numbers": [10, 40, 46, 47, 57, 72], "joker": 5, "superstar": 44},
+  {"date": "2025-02-15", "drawNo": 20, "time": "21:30", "numbers": [1, 9, 32, 48, 56, 58], "joker": 55, "superstar": 11},
+  {"date": "2025-02-12", "drawNo": 19, "time": "21:30", "numbers": [2, 20, 34, 46, 55, 60], "joker": 71, "superstar": 39},
+  {"date": "2025-02-10", "drawNo": 18, "time": "21:30", "numbers": [13, 31, 37, 64, 69, 88], "joker": 17, "superstar": 34},
+  {"date": "2025-02-08", "drawNo": 17, "time": "21:30", "numbers": [6, 7, 25, 48, 78, 89], "joker": 40, "superstar": 23},
+  {"date": "2025-02-05", "drawNo": 16, "time": "21:30", "numbers": [37, 38, 41, 64, 76, 80], "joker": 21, "superstar": 21},
+  {"date": "2025-02-03", "drawNo": 15, "time": "21:30", "numbers": [11, 29, 33, 51, 56, 86], "joker": 23, "superstar": 89},
+  {"date": "2025-02-01", "drawNo": 14, "time": "21:30", "numbers": [4, 38, 56, 61, 68, 70], "joker": 76, "superstar": 20},
+  {"date": "2025-01-29", "drawNo": 13, "time": "21:30", "numbers": [17, 29, 50, 71, 76, 89], "joker": 80, "superstar": 12},
+  {"date": "2025-01-27", "drawNo": 12, "time": "21:30", "numbers": [1, 2, 14, 34, 54, 65], "joker": 77, "superstar": 34},
+  {"date": "2025-01-25", "drawNo": 11, "time": "21:30", "numbers": [1, 18, 46, 54, 70, 88], "joker": 62, "superstar": 24},
+  {"date": "2025-01-22", "drawNo": 10, "time": "21:30", "numbers": [2, 20, 28, 44, 57, 88], "joker": 24, "superstar": 47},
+  {"date": "2025-01-20", "drawNo": 9, "time": "21:30", "numbers": [13, 25, 30, 33, 82, 86], "joker": 63, "superstar": 21},
+  {"date": "2025-01-18", "drawNo": 8, "time": "21:30", "numbers": [1, 24, 31, 32, 40, 81], "joker": 3, "superstar": 53},
+  {"date": "2025-01-15", "drawNo": 7, "time": "21:30", "numbers": [47, 59, 64, 68, 74, 82], "joker": 65, "superstar": 63},
+  {"date": "2025-01-13", "drawNo": 6, "time": "21:30", "numbers": [14, 28, 42, 54, 64, 89], "joker": 76, "superstar": 72},
+  {"date": "2025-01-11", "drawNo": 5, "time": "21:30", "numbers": [5, 21, 30, 32, 42, 75], "joker": 29, "superstar": 45},
+  {"date": "2025-01-08", "drawNo": 4, "time": "21:30", "numbers": [8, 36, 59, 60, 68, 75], "joker": 34, "superstar": 12},
+  {"date": "2025-01-06", "drawNo": 3, "time": "21:30", "numbers": [5, 16, 54, 58, 68, 84], "joker": 90, "superstar": 41},
+  {"date": "2025-01-04", "drawNo": 2, "time": "21:30", "numbers": [2, 42, 50, 57, 59, 90], "joker": 6, "superstar": 1},
+  {"date": "2025-01-01", "drawNo": 1, "time": "21:30", "numbers": [1, 21, 46, 61, 71, 78], "joker": 86, "superstar": 7},
+  {"date": "2024-12-30", "drawNo": 157, "time": "21:30", "numbers": [1, 20, 34, 43, 88, 90], "joker": 33, "superstar": 54},
+  {"date": "2024-12-28", "drawNo": 156, "time": "21:30", "numbers": [9, 16, 31, 51, 73, 83], "joker": 43, "superstar": 67},
+  {"date": "2024-12-25", "drawNo": 155, "time": "21:30", "numbers": [1, 7, 19, 43, 56, 82], "joker": 72, "superstar": 5},
+  {"date": "2024-12-23", "drawNo": 154, "time": "21:30", "numbers": [5, 27, 34, 58, 77, 86], "joker": 54, "superstar": 63},
+  {"date": "2024-12-21", "drawNo": 153, "time": "21:30", "numbers": [20, 40, 46, 69, 78, 80], "joker": 87, "superstar": 38},
+  {"date": "2024-12-18", "drawNo": 152, "time": "21:30", "numbers": [1, 31, 32, 49, 50, 75], "joker": 52, "superstar": 29},
+  {"date": "2024-12-16", "drawNo": 151, "time": "21:30", "numbers": [3, 12, 17, 56, 69, 76], "joker": 16, "superstar": 44},
+  {"date": "2024-12-14", "drawNo": 150, "time": "21:30", "numbers": [7, 15, 38, 46, 68, 80], "joker": 39, "superstar": 35},
+  {"date": "2024-12-11", "drawNo": 149, "time": "21:30", "numbers": [28, 34, 56, 70, 73, 86], "joker": 3, "superstar": 75},
+  {"date": "2024-12-09", "drawNo": 148, "time": "21:30", "numbers": [10, 12, 74, 80, 81, 82], "joker": 32, "superstar": 59},
+  {"date": "2024-12-07", "drawNo": 147, "time": "21:30", "numbers": [10, 13, 18, 31, 55, 63], "joker": 66, "superstar": 36},
+  {"date": "2024-12-04", "drawNo": 146, "time": "21:30", "numbers": [16, 27, 44, 49, 62, 73], "joker": 3, "superstar": 1},
+  {"date": "2024-12-02", "drawNo": 145, "time": "21:30", "numbers": [3, 16, 40, 44, 50, 77], "joker": 21, "superstar": 22},
+  {"date": "2024-11-30", "drawNo": 144, "time": "21:30", "numbers": [15, 38, 45, 47, 57, 71], "joker": 37, "superstar": 89},
+  {"date": "2024-11-27", "drawNo": 143, "time": "21:30", "numbers": [27, 42, 47, 69, 76, 85], "joker": 80, "superstar": 40},
+  {"date": "2024-11-25", "drawNo": 142, "time": "21:30", "numbers": [11, 12, 23, 24, 55, 80], "joker": 9, "superstar": 61},
+  {"date": "2024-11-23", "drawNo": 141, "time": "21:30", "numbers": [15, 25, 62, 65, 77, 86], "joker": 80, "superstar": 37},
+  {"date": "2024-11-20", "drawNo": 140, "time": "21:30", "numbers": [5, 18, 29, 33, 70, 81], "joker": 71, "superstar": 1},
+  {"date": "2024-11-18", "drawNo": 139, "time": "21:30", "numbers": [2, 25, 36, 58, 79, 80], "joker": 66, "superstar": 77},
+  {"date": "2024-11-16", "drawNo": 138, "time": "21:30", "numbers": [28, 51, 54, 56, 59, 74], "joker": 38, "superstar": 29},
+  {"date": "2024-11-13", "drawNo": 137, "time": "21:30", "numbers": [5, 29, 30, 64, 84, 89], "joker": 74, "superstar": 21},
+  {"date": "2024-11-11", "drawNo": 136, "time": "21:30", "numbers": [4, 18, 46, 47, 64, 66], "joker": 29, "superstar": 73},
+  {"date": "2024-11-09", "drawNo": 135, "time": "21:30", "numbers": [15, 33, 36, 74, 78, 81], "joker": 85, "superstar": 57},
+  {"date": "2024-11-06", "drawNo": 134, "time": "21:30", "numbers": [4, 33, 37, 43, 46, 63], "joker": 19, "superstar": 72},
+  {"date": "2024-11-04", "drawNo": 133, "time": "21:30", "numbers": [9, 12, 26, 38, 63, 69], "joker": 55, "superstar": 79},
+  {"date": "2024-11-02", "drawNo": 132, "time": "21:30", "numbers": [33, 54, 66, 78, 80, 89], "joker": 15, "superstar": 4},
+  {"date": "2024-10-30", "drawNo": 131, "time": "21:30", "numbers": [3, 18, 22, 26, 48, 85], "joker": 68, "superstar": 20},
+  {"date": "2024-10-28", "drawNo": 130, "time": "21:30", "numbers": [8, 28, 43, 57, 75, 87], "joker": 20, "superstar": 44},
+  {"date": "2024-10-26", "drawNo": 129, "time": "21:30", "numbers": [8, 13, 14, 41, 47, 84], "joker": 40, "superstar": 36},
+  {"date": "2024-10-23", "drawNo": 128, "time": "21:30", "numbers": [14, 35, 38, 53, 60, 89], "joker": 64, "superstar": 12},
+  {"date": "2024-10-21", "drawNo": 127, "time": "21:30", "numbers": [20, 33, 52, 54, 59, 76], "joker": 5, "superstar": 44},
+  {"date": "2024-10-19", "drawNo": 126, "time": "21:30", "numbers": [8, 21, 22, 27, 49, 67], "joker": 57, "superstar": 74},
+  {"date": "2024-10-16", "drawNo": 125, "time": "21:30", "numbers": [4, 20, 43, 52, 69, 89], "joker": 80, "superstar": 55},
+  {"date": "2024-10-14", "drawNo": 124, "time": "21:30", "numbers": [8, 33, 50, 59, 71, 77], "joker": 35, "superstar": 89},
+  {"date": "2024-10-12", "drawNo": 123, "time": "21:30", "numbers": [2, 9, 10, 20, 44, 69], "joker": 80, "superstar": 39},
+  {"date": "2024-10-09", "drawNo": 122, "time": "21:30", "numbers": [49, 51, 63, 67, 89, 90], "joker": 52, "superstar": 82},
+  {"date": "2024-10-07", "drawNo": 121, "time": "21:30", "numbers": [27, 37, 44, 46, 79, 81], "joker": 10, "superstar": 5},
+  {"date": "2024-10-05", "drawNo": 120, "time": "21:30", "numbers": [4, 7, 30, 34, 48, 80], "joker": 86, "superstar": 31},
+  {"date": "2024-10-02", "drawNo": 119, "time": "21:30", "numbers": [22, 40, 54, 55, 61, 62], "joker": 90, "superstar": 89},
+  {"date": "2024-09-30", "drawNo": 118, "time": "21:30", "numbers": [30, 37, 39, 65, 77, 90], "joker": 28, "superstar": 70},
+  {"date": "2024-09-28", "drawNo": 117, "time": "21:30", "numbers": [49, 53, 54, 63, 67, 68], "joker": 77, "superstar": 80},
+  {"date": "2024-09-25", "drawNo": 116, "time": "21:30", "numbers": [5, 21, 25, 35, 56, 82], "joker": 24, "superstar": 17},
+  {"date": "2024-09-23", "drawNo": 115, "time": "21:30", "numbers": [3, 14, 16, 54, 58, 69], "joker": 42, "superstar": 10},
+  {"date": "2024-09-21", "drawNo": 114, "time": "21:30", "numbers": [23, 44, 53, 58, 88, 90], "joker": 30, "superstar": 43},
+  {"date": "2024-09-18", "drawNo": 113, "time": "21:30", "numbers": [17, 27, 48, 50, 71, 88], "joker": 58, "superstar": 51},
+  {"date": "2024-09-16", "drawNo": 112, "time": "21:30", "numbers": [1, 17, 25, 35, 44, 90], "joker": 46, "superstar": 35},
+  {"date": "2024-09-14", "drawNo": 111, "time": "21:30", "numbers": [9, 19, 26, 41, 77, 89], "joker": 82, "superstar": 53},
+  {"date": "2024-09-11", "drawNo": 110, "time": "21:30", "numbers": [14, 35, 56, 60, 84, 87], "joker": 81, "superstar": 18},
+  {"date": "2024-09-09", "drawNo": 109, "time": "21:30", "numbers": [4, 5, 13, 15, 48, 90], "joker": 47, "superstar": 49},
+  {"date": "2024-09-07", "drawNo": 108, "time": "21:30", "numbers": [8, 13, 16, 30, 38, 84], "joker": 78, "superstar": 70},
+  {"date": "2024-09-04", "drawNo": 107, "time": "21:30", "numbers": [57, 58, 62, 66, 84, 89], "joker": 10, "superstar": 56},
+  {"date": "2024-09-02", "drawNo": 106, "time": "21:30", "numbers": [15, 30, 35, 45, 61, 68], "joker": 11, "superstar": 28},
+  {"date": "2024-08-31", "drawNo": 105, "time": "21:30", "numbers": [23, 45, 48, 51, 73, 90], "joker": 58, "superstar": 32},
+  {"date": "2024-08-28", "drawNo": 104, "time": "21:30", "numbers": [3, 20, 34, 45, 60, 71], "joker": 75, "superstar": 52},
+  {"date": "2024-08-24", "drawNo": 102, "time": "21:30", "numbers": [10, 13, 19, 39, 87, 89], "joker": 14, "superstar": 83},
+  {"date": "2024-08-21", "drawNo": 101, "time": "21:30", "numbers": [6, 12, 16, 29, 63, 72], "joker": 75, "superstar": 44},
+  {"date": "2024-08-19", "drawNo": 100, "time": "21:30", "numbers": [3, 6, 36, 45, 67, 82], "joker": 11, "superstar": 47},
+  {"date": "2024-08-17", "drawNo": 99, "time": "21:30", "numbers": [3, 19, 32, 66, 71, 81], "joker": 74, "superstar": 9},
+  {"date": "2024-08-14", "drawNo": 98, "time": "21:30", "numbers": [1, 8, 10, 37, 54, 77], "joker": 79, "superstar": 87},
+  {"date": "2024-08-07", "drawNo": 95, "time": "21:30", "numbers": [19, 46, 54, 56, 80, 82], "joker": 13, "superstar": 48},
+  {"date": "2024-08-03", "drawNo": 93, "time": "21:30", "numbers": [10, 13, 35, 42, 60, 87], "joker": 69, "superstar": 17},
+  {"date": "2024-07-31", "drawNo": 92, "time": "21:30", "numbers": [28, 50, 52, 61, 79, 89], "joker": 18, "superstar": 86},
+  {"date": "2024-07-27", "drawNo": 90, "time": "21:30", "numbers": [14, 21, 45, 56, 70, 76], "joker": 35, "superstar": 53},
+  {"date": "2024-07-24", "drawNo": 89, "time": "21:30", "numbers": [1, 18, 31, 46, 61, 84], "joker": 41, "superstar": 29},
+  {"date": "2024-07-20", "drawNo": 87, "time": "21:30", "numbers": [7, 23, 45, 58, 60, 73], "joker": 46, "superstar": 26},
+  {"date": "2024-07-10", "drawNo": 83, "time": "21:30", "numbers": [15, 24, 31, 40, 48, 90], "joker": 87, "superstar": 36},
+  {"date": "2024-07-08", "drawNo": 82, "time": "21:30", "numbers": [6, 35, 44, 53, 57, 85], "joker": 4, "superstar": 9},
+  {"date": "2024-07-06", "drawNo": 81, "time": "21:30", "numbers": [26, 32, 35, 43, 56, 81], "joker": 38, "superstar": 44},
+  {"date": "2024-06-29", "drawNo": 78, "time": "21:30", "numbers": [8, 40, 46, 47, 57, 84], "joker": 12, "superstar": 29},
+  {"date": "2024-06-26", "drawNo": 77, "time": "21:30", "numbers": [18, 33, 38, 48, 52, 75], "joker": 49, "superstar": 16},
+  {"date": "2024-06-22", "drawNo": 75, "time": "21:30", "numbers": [19, 30, 45, 57, 78, 87], "joker": 5, "superstar": 4},
+  {"date": "2024-06-19", "drawNo": 74, "time": "21:30", "numbers": [12, 16, 33, 62, 80, 84], "joker": 44, "superstar": 73},
+  {"date": "2024-06-17", "drawNo": 73, "time": "21:30", "numbers": [23, 32, 48, 51, 58, 89], "joker": 83, "superstar": 65},
+  {"date": "2024-06-10", "drawNo": 70, "time": "21:30", "numbers": [3, 11, 24, 33, 61, 82], "joker": 69, "superstar": 60},
+  {"date": "2024-06-08", "drawNo": 69, "time": "21:30", "numbers": [6, 7, 24, 33, 35, 63], "joker": 19, "superstar": 61},
+  {"date": "2024-06-01", "drawNo": 66, "time": "21:30", "numbers": [6, 34, 55, 65, 74, 86], "joker": 8, "superstar": 23},
+  {"date": "2024-05-27", "drawNo": 64, "time": "21:30", "numbers": [18, 28, 38, 41, 43, 73], "joker": 49, "superstar": 31},
+  {"date": "2024-05-25", "drawNo": 63, "time": "21:30", "numbers": [19, 28, 44, 62, 73, 81], "joker": 61, "superstar": 89},
+  {"date": "2024-05-22", "drawNo": 62, "time": "21:30", "numbers": [13, 26, 30, 34, 37, 56], "joker": 57, "superstar": 70},
+  {"date": "2024-05-18", "drawNo": 60, "time": "21:30", "numbers": [30, 42, 53, 65, 79, 80], "joker": 83, "superstar": 57},
+  {"date": "2024-05-15", "drawNo": 59, "time": "21:30", "numbers": [21, 30, 42, 43, 48, 50], "joker": 75, "superstar": 5},
+  {"date": "2024-05-11", "drawNo": 57, "time": "21:30", "numbers": [13, 32, 44, 55, 57, 90], "joker": 21, "superstar": 36},
+  {"date": "2024-05-08", "drawNo": 56, "time": "21:30", "numbers": [2, 7, 19, 50, 53, 54], "joker": 8, "superstar": 79},
+  {"date": "2024-05-06", "drawNo": 55, "time": "21:30", "numbers": [5, 17, 21, 52, 56, 85], "joker": 79, "superstar": 64},
+  {"date": "2024-05-04", "drawNo": 54, "time": "21:30", "numbers": [3, 26, 32, 61, 82, 83], "joker": 41, "superstar": 68},
+  {"date": "2024-05-01", "drawNo": 53, "time": "21:30", "numbers": [8, 23, 44, 77, 84, 86], "joker": 9, "superstar": 13},
+  {"date": "2024-04-27", "drawNo": 51, "time": "21:30", "numbers": [28, 47, 71, 77, 81, 85], "joker": 42, "superstar": 35},
+  {"date": "2024-04-24", "drawNo": 50, "time": "21:30", "numbers": [37, 38, 49, 69, 84, 90], "joker": 62, "superstar": 22},
+  {"date": "2024-04-22", "drawNo": 49, "time": "21:30", "numbers": [3, 48, 61, 71, 81, 82], "joker": 42, "superstar": 27},
+  {"date": "2024-04-15", "drawNo": 46, "time": "21:30", "numbers": [4, 7, 32, 42, 58, 64], "joker": 65, "superstar": 73},
+  {"date": "2024-04-10", "drawNo": 44, "time": "21:30", "numbers": [28, 35, 36, 37, 40, 73], "joker": 15, "superstar": 53},
+  {"date": "2024-04-03", "drawNo": 41, "time": "21:30", "numbers": [8, 21, 27, 45, 70, 82], "joker": 85, "superstar": 59},
+  {"date": "2024-03-30", "drawNo": 39, "time": "21:30", "numbers": [14, 17, 31, 55, 56, 69], "joker": 53, "superstar": 56},
+  {"date": "2024-03-23", "drawNo": 36, "time": "21:30", "numbers": [15, 19, 39, 60, 69, 83], "joker": 81, "superstar": 32},
+  {"date": "2024-03-20", "drawNo": 35, "time": "21:30", "numbers": [7, 37, 44, 51, 61, 66], "joker": 70, "superstar": 4},
+  {"date": "2024-03-18", "drawNo": 34, "time": "21:30", "numbers": [3, 18, 68, 84, 87, 88], "joker": 26, "superstar": 4},
+  {"date": "2024-03-16", "drawNo": 33, "time": "21:30", "numbers": [28, 34, 45, 60, 71, 80], "joker": 47, "superstar": 59},
+  {"date": "2024-03-13", "drawNo": 32, "time": "21:30", "numbers": [5, 56, 59, 62, 78, 84], "joker": 25, "superstar": 42},
+  {"date": "2024-03-06", "drawNo": 29, "time": "21:30", "numbers": [9, 11, 46, 48, 49, 86], "joker": 12, "superstar": 8},
+  {"date": "2024-03-02", "drawNo": 27, "time": "21:30", "numbers": [8, 19, 47, 54, 56, 78], "joker": 59, "superstar": 81},
+  {"date": "2024-02-28", "drawNo": 26, "time": "21:30", "numbers": [9, 10, 17, 23, 30, 60], "joker": 69, "superstar": 83},
+  {"date": "2024-02-26", "drawNo": 25, "time": "21:30", "numbers": [1, 22, 36, 58, 76, 87], "joker": 4, "superstar": 40},
+  {"date": "2024-02-24", "drawNo": 24, "time": "21:30", "numbers": [37, 69, 71, 74, 77, 88], "joker": 54, "superstar": 22},
+  {"date": "2024-02-21", "drawNo": 23, "time": "21:30", "numbers": [10, 11, 47, 57, 60, 67], "joker": 36, "superstar": 73},
+  {"date": "2024-02-19", "drawNo": 22, "time": "21:30", "numbers": [7, 10, 15, 31, 52, 77], "joker": 78, "superstar": 38},
+  {"date": "2024-02-17", "drawNo": 21, "time": "21:30", "numbers": [15, 36, 40, 63, 74, 79], "joker": 81, "superstar": 66},
+  {"date": "2024-02-14", "drawNo": 20, "time": "21:30", "numbers": [1, 29, 40, 45, 63, 74], "joker": 76, "superstar": 54},
+  {"date": "2024-02-12", "drawNo": 19, "time": "21:30", "numbers": [36, 40, 50, 53, 70, 76], "joker": 49, "superstar": 77},
+  {"date": "2024-02-10", "drawNo": 18, "time": "21:30", "numbers": [3, 42, 47, 64, 71, 74], "joker": 33, "superstar": 88},
+  {"date": "2024-02-07", "drawNo": 17, "time": "21:30", "numbers": [23, 26, 29, 41, 69, 77], "joker": 51, "superstar": 6},
+  {"date": "2024-02-05", "drawNo": 16, "time": "21:30", "numbers": [15, 30, 48, 53, 76, 77], "joker": 61, "superstar": 67},
+  {"date": "2024-02-03", "drawNo": 15, "time": "21:30", "numbers": [33, 38, 47, 57, 81, 85], "joker": 49, "superstar": 41},
+  {"date": "2024-01-31", "drawNo": 14, "time": "21:30", "numbers": [9, 13, 79, 83, 84, 89], "joker": 18, "superstar": 4},
+  {"date": "2024-01-29", "drawNo": 13, "time": "21:30", "numbers": [16, 18, 25, 26, 71, 83], "joker": 1, "superstar": 31},
+  {"date": "2024-01-27", "drawNo": 12, "time": "21:30", "numbers": [22, 57, 60, 62, 64, 83], "joker": 41, "superstar": 72},
+  {"date": "2024-01-24", "drawNo": 11, "time": "21:30", "numbers": [3, 5, 37, 50, 52, 62], "joker": 59, "superstar": 53},
+  {"date": "2024-01-22", "drawNo": 10, "time": "21:30", "numbers": [9, 17, 20, 33, 63, 75], "joker": 38, "superstar": 74},
+  {"date": "2024-01-20", "drawNo": 9, "time": "21:30", "numbers": [10, 25, 31, 45, 65, 77], "joker": 18, "superstar": 55},
+  {"date": "2024-01-17", "drawNo": 8, "time": "21:30", "numbers": [13, 26, 38, 55, 60, 63], "joker": 61, "superstar": 63},
+  {"date": "2024-01-15", "drawNo": 7, "time": "21:30", "numbers": [7, 11, 21, 22, 27, 63], "joker": 48, "superstar": 55},
+  {"date": "2024-01-13", "drawNo": 6, "time": "21:30", "numbers": [27, 44, 60, 67, 68, 88], "joker": 85, "superstar": 16},
+  {"date": "2024-01-10", "drawNo": 5, "time": "21:30", "numbers": [14, 28, 41, 45, 49, 62], "joker": 60, "superstar": 46},
+  {"date": "2024-01-08", "drawNo": 4, "time": "21:30", "numbers": [4, 33, 35, 62, 65, 76], "joker": 67, "superstar": 50},
+  {"date": "2024-01-06", "drawNo": 3, "time": "21:30", "numbers": [45, 49, 51, 60, 71, 86], "joker": 77, "superstar": 38},
+  {"date": "2024-01-01", "drawNo": 1, "time": "21:30", "numbers": [20, 21, 31, 45, 46, 87], "joker": 37, "superstar": 90},
+  {"date": "2023-12-30", "drawNo": 156, "time": "21:30", "numbers": [40, 41, 46, 62, 74, 85], "joker": 18, "superstar": 61},
+  {"date": "2023-12-27", "drawNo": 155, "time": "21:30", "numbers": [17, 39, 44, 60, 68, 87], "joker": 5, "superstar": 70},
+  {"date": "2023-12-25", "drawNo": 154, "time": "21:30", "numbers": [43, 55, 56, 60, 64, 66], "joker": 12, "superstar": 60},
+  {"date": "2023-12-23", "drawNo": 153, "time": "21:30", "numbers": [18, 20, 42, 50, 54, 85], "joker": 61, "superstar": 67},
+  {"date": "2023-12-20", "drawNo": 152, "time": "21:30", "numbers": [1, 16, 45, 50, 54, 78], "joker": 66, "superstar": 36},
+  {"date": "2023-12-18", "drawNo": 151, "time": "21:30", "numbers": [33, 45, 53, 80, 85, 89], "joker": 77, "superstar": 39},
+  {"date": "2023-12-16", "drawNo": 150, "time": "21:30", "numbers": [4, 10, 24, 41, 87, 88], "joker": 1, "superstar": 74},
+  {"date": "2023-12-13", "drawNo": 149, "time": "21:30", "numbers": [1, 13, 20, 78, 86, 87], "joker": 50, "superstar": null},
+  {"date": "2023-12-11", "drawNo": 148, "time": "21:30", "numbers": [27, 36, 41, 47, 59, 67], "joker": 5, "superstar": 24},
+  {"date": "2023-12-09", "drawNo": 147, "time": "21:30", "numbers": [9, 22, 29, 53, 72, 87], "joker": 58, "superstar": 12},
+  {"date": "2023-12-06", "drawNo": 146, "time": "21:30", "numbers": [14, 16, 44, 59, 70, 89], "joker": 73, "superstar": 43},
+  {"date": "2023-12-04", "drawNo": 145, "time": "21:30", "numbers": [5, 29, 36, 39, 47, 51], "joker": 78, "superstar": 18},
+  {"date": "2023-12-02", "drawNo": 144, "time": "21:30", "numbers": [43, 48, 51, 69, 82, 86], "joker": 29, "superstar": 5},
+  {"date": "2023-11-29", "drawNo": 143, "time": "21:30", "numbers": [13, 42, 44, 52, 67, 75], "joker": 21, "superstar": 77},
+  {"date": "2023-11-27", "drawNo": 142, "time": "21:30", "numbers": [32, 35, 36, 47, 62, 63], "joker": 1, "superstar": 57},
+  {"date": "2023-11-25", "drawNo": 141, "time": "21:30", "numbers": [25, 28, 40, 50, 53, 90], "joker": 82, "superstar": 6},
+  {"date": "2023-11-22", "drawNo": 140, "time": "21:30", "numbers": [2, 5, 15, 23, 36, 49], "joker": 66, "superstar": 64},
+  {"date": "2023-11-20", "drawNo": 139, "time": "21:30", "numbers": [24, 25, 31, 68, 74, 75], "joker": 62, "superstar": 53},
+  {"date": "2023-11-18", "drawNo": 138, "time": "21:30", "numbers": [3, 49, 55, 76, 81, 86], "joker": 36, "superstar": 61},
+  {"date": "2023-11-15", "drawNo": 137, "time": "21:30", "numbers": [31, 33, 38, 56, 67, 78], "joker": 26, "superstar": 56},
+  {"date": "2023-11-13", "drawNo": 136, "time": "21:30", "numbers": [43, 60, 68, 71, 74, 90], "joker": 54, "superstar": 21},
+  {"date": "2023-11-11", "drawNo": 135, "time": "21:30", "numbers": [24, 30, 56, 60, 63, 85], "joker": 34, "superstar": 18},
+  {"date": "2023-11-06", "drawNo": 133, "time": "21:30", "numbers": [22, 34, 36, 46, 50, 69], "joker": 83, "superstar": 60},
+  {"date": "2023-11-04", "drawNo": 132, "time": "21:30", "numbers": [8, 42, 64, 76, 83, 86], "joker": 46, "superstar": 30},
+  {"date": "2023-10-30", "drawNo": 130, "time": "21:30", "numbers": [6, 34, 46, 66, 71, 83], "joker": 42, "superstar": 77},
+  {"date": "2023-10-28", "drawNo": 129, "time": "21:30", "numbers": [1, 2, 11, 20, 21, 41], "joker": 26, "superstar": 35},
+  {"date": "2023-10-25", "drawNo": 128, "time": "21:30", "numbers": [11, 20, 42, 47, 54, 57], "joker": 2, "superstar": 29},
+  {"date": "2023-10-23", "drawNo": 127, "time": "21:30", "numbers": [35, 37, 59, 60, 75, 85], "joker": 28, "superstar": 25},
+  {"date": "2023-10-21", "drawNo": 126, "time": "21:30", "numbers": [13, 18, 32, 37, 58, 75], "joker": 26, "superstar": 21},
+  {"date": "2023-10-18", "drawNo": 125, "time": "21:30", "numbers": [49, 51, 60, 61, 66, 73], "joker": 31, "superstar": 51},
+  {"date": "2023-10-16", "drawNo": 124, "time": "21:30", "numbers": [2, 12, 15, 31, 48, 58], "joker": 71, "superstar": 66},
+  {"date": "2023-10-14", "drawNo": 123, "time": "21:30", "numbers": [4, 59, 76, 83, 86, 90], "joker": 38, "superstar": 69},
+  {"date": "2023-10-11", "drawNo": 122, "time": "21:30", "numbers": [10, 14, 38, 43, 50, 81], "joker": 12, "superstar": 35},
+  {"date": "2023-10-07", "drawNo": 120, "time": "21:30", "numbers": [20, 22, 36, 65, 66, 69], "joker": 16, "superstar": 53},
+  {"date": "2023-10-04", "drawNo": 119, "time": "21:30", "numbers": [5, 22, 39, 61, 75, 80], "joker": 66, "superstar": 55},
+  {"date": "2023-10-02", "drawNo": 118, "time": "21:30", "numbers": [3, 19, 45, 58, 62, 88], "joker": 34, "superstar": 16},
+  {"date": "2023-09-30", "drawNo": 117, "time": "21:30", "numbers": [22, 27, 28, 62, 75, 76], "joker": 16, "superstar": 46},
+  {"date": "2023-09-27", "drawNo": 116, "time": "21:30", "numbers": [32, 50, 57, 69, 70, 75], "joker": 5, "superstar": 65},
+  {"date": "2023-09-23", "drawNo": 114, "time": "21:30", "numbers": [1, 11, 34, 40, 60, 72], "joker": 75, "superstar": 19},
+  {"date": "2023-09-20", "drawNo": 113, "time": "21:30", "numbers": [26, 34, 38, 43, 68, 76], "joker": 44, "superstar": 11},
+  {"date": "2023-09-11", "drawNo": 109, "time": "21:30", "numbers": [3, 14, 20, 40, 79, 84], "joker": 35, "superstar": 67},
+  {"date": "2023-09-09", "drawNo": 108, "time": "21:30", "numbers": [1, 2, 13, 16, 24, 47], "joker": 11, "superstar": 17},
+  {"date": "2023-09-02", "drawNo": 105, "time": "21:30", "numbers": [29, 36, 38, 43, 49, 78], "joker": 46, "superstar": 65},
+  {"date": "2023-08-30", "drawNo": 104, "time": "21:30", "numbers": [6, 20, 40, 46, 47, 48], "joker": 28, "superstar": 71},
+  {"date": "2023-08-28", "drawNo": 103, "time": "21:30", "numbers": [1, 29, 36, 48, 60, 89], "joker": 67, "superstar": 56},
+  {"date": "2023-08-26", "drawNo": 102, "time": "21:30", "numbers": [15, 30, 72, 76, 78, 79], "joker": 51, "superstar": 51},
+  {"date": "2023-08-23", "drawNo": 101, "time": "21:30", "numbers": [9, 18, 24, 42, 76, 86], "joker": 71, "superstar": 10},
+  {"date": "2023-08-21", "drawNo": 100, "time": "21:30", "numbers": [17, 20, 32, 33, 49, 57], "joker": 40, "superstar": 18},
+  {"date": "2023-08-19", "drawNo": 99, "time": "21:30", "numbers": [37, 45, 48, 55, 73, 84], "joker": 24, "superstar": 68},
+  {"date": "2023-08-16", "drawNo": 98, "time": "21:30", "numbers": [45, 58, 66, 79, 84, 89], "joker": 9, "superstar": 64},
+  {"date": "2023-08-09", "drawNo": 95, "time": "21:30", "numbers": [20, 36, 39, 69, 71, 75], "joker": 88, "superstar": 42},
+  {"date": "2023-08-05", "drawNo": 93, "time": "21:30", "numbers": [18, 26, 34, 43, 52, 80], "joker": 36, "superstar": 45},
+  {"date": "2023-07-31", "drawNo": 91, "time": "21:30", "numbers": [1, 26, 34, 56, 64, 67], "joker": 71, "superstar": 14},
+  {"date": "2023-07-29", "drawNo": 90, "time": "21:30", "numbers": [33, 45, 63, 66, 74, 89], "joker": 67, "superstar": 89},
+  {"date": "2023-07-26", "drawNo": 89, "time": "21:30", "numbers": [10, 20, 23, 30, 83, 89], "joker": 7, "superstar": 80},
+  {"date": "2023-07-24", "drawNo": 88, "time": "21:30", "numbers": [4, 12, 31, 38, 68, 83], "joker": 9, "superstar": 48},
+  {"date": "2023-07-22", "drawNo": 87, "time": "21:30", "numbers": [12, 34, 52, 56, 59, 82], "joker": 15, "superstar": 71},
+  {"date": "2023-07-19", "drawNo": 86, "time": "21:30", "numbers": [25, 28, 44, 60, 77, 89], "joker": 47, "superstar": 13},
+  {"date": "2023-07-17", "drawNo": 85, "time": "21:30", "numbers": [5, 30, 55, 62, 66, 78], "joker": 79, "superstar": 16},
+  {"date": "2023-07-15", "drawNo": 84, "time": "21:30", "numbers": [14, 28, 41, 45, 66, 87], "joker": 39, "superstar": 4},
+  {"date": "2023-07-12", "drawNo": 83, "time": "21:30", "numbers": [21, 30, 31, 40, 51, 71], "joker": 54, "superstar": 59},
+  {"date": "2023-07-08", "drawNo": 81, "time": "21:30", "numbers": [10, 37, 45, 67, 73, 84], "joker": 68, "superstar": 45},
+  {"date": "2023-07-03", "drawNo": 79, "time": "21:30", "numbers": [7, 14, 52, 71, 77, 87], "joker": 46, "superstar": 89},
+  {"date": "2023-07-01", "drawNo": 78, "time": "21:30", "numbers": [3, 19, 24, 41, 46, 50], "joker": 4, "superstar": 13},
+  {"date": "2023-06-28", "drawNo": 77, "time": "21:30", "numbers": [14, 19, 72, 73, 75, 82], "joker": 28, "superstar": 72},
+  {"date": "2023-06-26", "drawNo": 76, "time": "21:30", "numbers": [51, 64, 69, 70, 78, 85], "joker": 42, "superstar": 82},
+  {"date": "2023-06-24", "drawNo": 75, "time": "21:30", "numbers": [18, 51, 64, 66, 84, 87], "joker": 24, "superstar": 49},
+  {"date": "2023-06-21", "drawNo": 74, "time": "21:30", "numbers": [10, 25, 39, 47, 52, 72], "joker": 61, "superstar": 26},
+  {"date": "2023-06-19", "drawNo": 73, "time": "21:30", "numbers": [9, 22, 27, 50, 74, 86], "joker": 2, "superstar": 76},
+  {"date": "2023-06-17", "drawNo": 72, "time": "21:30", "numbers": [7, 30, 32, 33, 34, 35], "joker": 54, "superstar": 55},
+  {"date": "2023-06-14", "drawNo": 71, "time": "21:30", "numbers": [4, 9, 34, 38, 89, 90], "joker": 86, "superstar": 67},
+  {"date": "2023-06-12", "drawNo": 70, "time": "21:30", "numbers": [1, 12, 46, 58, 80, 86], "joker": 30, "superstar": 50},
+  {"date": "2023-06-10", "drawNo": 69, "time": "21:30", "numbers": [2, 37, 39, 45, 50, 52], "joker": 34, "superstar": 17},
+  {"date": "2023-06-07", "drawNo": 68, "time": "21:30", "numbers": [1, 12, 41, 49, 55, 71], "joker": 8, "superstar": 34},
+  {"date": "2023-06-05", "drawNo": 67, "time": "21:30", "numbers": [15, 56, 67, 69, 88, 89], "joker": 1, "superstar": 54},
+  {"date": "2023-06-03", "drawNo": 66, "time": "21:30", "numbers": [24, 26, 43, 54, 62, 85], "joker": 8, "superstar": 43},
+  {"date": "2023-05-31", "drawNo": 65, "time": "21:30", "numbers": [1, 7, 10, 30, 49, 66], "joker": 46, "superstar": 43},
+  {"date": "2023-05-29", "drawNo": 64, "time": "21:30", "numbers": [8, 15, 47, 63, 69, 86], "joker": 18, "superstar": 59},
+  {"date": "2023-05-27", "drawNo": 63, "time": "21:30", "numbers": [20, 22, 32, 46, 56, 75], "joker": 66, "superstar": 77},
+  {"date": "2023-05-22", "drawNo": 61, "time": "21:30", "numbers": [18, 36, 45, 48, 49, 69], "joker": 58, "superstar": 68},
+  {"date": "2023-05-20", "drawNo": 60, "time": "21:30", "numbers": [3, 14, 18, 51, 62, 68], "joker": 31, "superstar": 84},
+  {"date": "2023-05-17", "drawNo": 59, "time": "21:30", "numbers": [14, 29, 40, 46, 79, 89], "joker": 19, "superstar": 66},
+  {"date": "2023-05-15", "drawNo": 58, "time": "21:30", "numbers": [10, 13, 20, 31, 69, 87], "joker": 56, "superstar": 6},
+  {"date": "2023-05-13", "drawNo": 57, "time": "21:30", "numbers": [25, 49, 66, 80, 81, 88], "joker": 55, "superstar": 90},
+  {"date": "2023-05-10", "drawNo": 56, "time": "21:30", "numbers": [17, 30, 35, 62, 89, 90], "joker": 28, "superstar": 7},
+  {"date": "2023-05-08", "drawNo": 55, "time": "21:30", "numbers": [9, 15, 46, 47, 57, 67], "joker": 86, "superstar": 14},
+  {"date": "2023-05-06", "drawNo": 54, "time": "21:30", "numbers": [21, 29, 66, 67, 82, 87], "joker": 55, "superstar": 65},
+  {"date": "2023-05-03", "drawNo": 53, "time": "21:30", "numbers": [7, 18, 45, 47, 61, 88], "joker": 60, "superstar": 13},
+  {"date": "2023-05-01", "drawNo": 52, "time": "21:30", "numbers": [34, 39, 43, 49, 56, 57], "joker": 52, "superstar": 43},
+  {"date": "2023-04-29", "drawNo": 51, "time": "21:30", "numbers": [8, 11, 41, 58, 84, 87], "joker": 63, "superstar": 76},
+  {"date": "2023-04-24", "drawNo": 49, "time": "21:30", "numbers": [12, 15, 45, 62, 74, 84], "joker": 76, "superstar": 50},
+  {"date": "2023-04-22", "drawNo": 48, "time": "21:30", "numbers": [7, 8, 11, 20, 46, 76], "joker": null, "superstar": null},
+  {"date": "2023-04-19", "drawNo": 47, "time": "21:30", "numbers": [35, 41, 42, 46, 70, 87], "joker": 7, "superstar": 62},
+  {"date": "2023-04-17", "drawNo": 46, "time": "21:30", "numbers": [5, 6, 18, 25, 48, 72], "joker": 2, "superstar": 70},
+  {"date": "2023-04-15", "drawNo": 45, "time": "21:30", "numbers": [9, 26, 39, 43, 56, 64], "joker": 87, "superstar": 9},
+  {"date": "2023-04-12", "drawNo": 44, "time": "21:30", "numbers": [38, 42, 63, 65, 82, 85], "joker": 9, "superstar": 72},
+  {"date": "2023-04-10", "drawNo": 43, "time": "21:30", "numbers": [1, 2, 11, 33, 38, 89], "joker": 81, "superstar": 50},
+  {"date": "2023-04-08", "drawNo": 42, "time": "21:30", "numbers": [5, 20, 21, 31, 40, 51], "joker": 24, "superstar": 80},
+  {"date": "2023-04-05", "drawNo": 41, "time": "21:30", "numbers": [25, 36, 39, 47, 55, 58], "joker": 51, "superstar": 70},
+  {"date": "2023-04-03", "drawNo": 40, "time": "21:30", "numbers": [2, 11, 47, 61, 80, 89], "joker": 74, "superstar": 13},
+  {"date": "2023-04-01", "drawNo": 39, "time": "21:30", "numbers": [10, 28, 38, 70, 86, 89], "joker": 13, "superstar": 8},
+  {"date": "2023-03-29", "drawNo": 38, "time": "21:30", "numbers": [21, 33, 49, 50, 51, 55], "joker": 76, "superstar": 59},
+  {"date": "2023-03-27", "drawNo": 37, "time": "21:30", "numbers": [23, 25, 36, 38, 82, 83], "joker": 16, "superstar": 34},
+  {"date": "2023-03-25", "drawNo": 36, "time": "21:30", "numbers": [6, 37, 66, 72, 77, 83], "joker": 1, "superstar": 53},
+  {"date": "2023-03-22", "drawNo": 35, "time": "21:30", "numbers": [3, 29, 58, 68, 69, 77], "joker": 42, "superstar": 14},
+  {"date": "2023-03-20", "drawNo": 34, "time": "21:30", "numbers": [11, 14, 15, 25, 26, 74], "joker": 64, "superstar": 58},
+  {"date": "2023-03-18", "drawNo": 33, "time": "21:30", "numbers": [11, 18, 30, 60, 81, 84], "joker": 17, "superstar": 61},
+  {"date": "2023-03-15", "drawNo": 32, "time": "21:30", "numbers": [11, 28, 29, 58, 68, 78], "joker": 24, "superstar": 26},
+  {"date": "2023-03-13", "drawNo": 31, "time": "21:30", "numbers": [5, 30, 78, 81, 83, 90], "joker": 62, "superstar": 21},
+  {"date": "2023-03-11", "drawNo": 30, "time": "21:30", "numbers": [23, 38, 45, 66, 77, 83], "joker": 75, "superstar": 2},
+  {"date": "2023-03-08", "drawNo": 29, "time": "21:30", "numbers": [28, 29, 30, 37, 61, 71], "joker": 10, "superstar": 9},
+  {"date": "2023-03-06", "drawNo": 28, "time": "21:30", "numbers": [5, 7, 38, 57, 64, 66], "joker": 16, "superstar": 76},
+  {"date": "2023-03-04", "drawNo": 27, "time": "21:30", "numbers": [48, 57, 62, 74, 87, 88], "joker": 42, "superstar": 8},
+  {"date": "2023-03-01", "drawNo": 26, "time": "21:30", "numbers": [5, 6, 8, 24, 57, 58], "joker": 87, "superstar": 59},
+  {"date": "2023-02-27", "drawNo": 25, "time": "21:30", "numbers": [6, 7, 71, 74, 82, 86], "joker": 38, "superstar": 73},
+  {"date": "2023-02-25", "drawNo": 24, "time": "21:30", "numbers": [1, 17, 25, 55, 62, 77], "joker": 13, "superstar": 82},
+  {"date": "2023-02-22", "drawNo": 23, "time": "21:30", "numbers": [21, 24, 63, 72, 80, 86], "joker": 46, "superstar": 85},
+  {"date": "2023-02-20", "drawNo": 22, "time": "21:30", "numbers": [5, 13, 42, 45, 68, 81], "joker": 41, "superstar": 3},
+  {"date": "2023-02-18", "drawNo": 21, "time": "21:30", "numbers": [20, 23, 40, 60, 83, 85], "joker": 64, "superstar": 4},
+  {"date": "2023-02-15", "drawNo": 20, "time": "21:30", "numbers": [11, 32, 59, 60, 67, 85], "joker": 26, "superstar": 70},
+  {"date": "2023-02-13", "drawNo": 19, "time": "21:30", "numbers": [4, 7, 23, 37, 40, 50], "joker": 75, "superstar": 55},
+  {"date": "2023-02-11", "drawNo": 18, "time": "21:30", "numbers": [6, 11, 16, 46, 59, 69], "joker": 25, "superstar": 52},
+  {"date": "2023-02-04", "drawNo": 15, "time": "21:30", "numbers": [25, 31, 37, 38, 56, 85], "joker": 29, "superstar": 15},
+  {"date": "2023-02-01", "drawNo": 14, "time": "21:30", "numbers": [12, 13, 79, 87, 88, 89], "joker": 29, "superstar": 87},
+  {"date": "2023-01-30", "drawNo": 13, "time": "21:30", "numbers": [7, 61, 63, 75, 83, 89], "joker": 71, "superstar": 71},
+  {"date": "2023-01-28", "drawNo": 12, "time": "21:30", "numbers": [7, 11, 29, 44, 45, 84], "joker": 51, "superstar": 76},
+  {"date": "2023-01-25", "drawNo": 11, "time": "21:30", "numbers": [26, 29, 40, 63, 70, 88], "joker": 72, "superstar": 65},
+  {"date": "2023-01-23", "drawNo": 10, "time": "21:30", "numbers": [4, 17, 30, 65, 69, 78], "joker": 33, "superstar": 3},
+  {"date": "2023-01-21", "drawNo": 9, "time": "21:30", "numbers": [39, 49, 62, 81, 87, 88], "joker": 14, "superstar": 14},
+  {"date": "2023-01-18", "drawNo": 8, "time": "21:30", "numbers": [10, 22, 35, 44, 52, 85], "joker": 81, "superstar": 64},
+  {"date": "2023-01-14", "drawNo": 6, "time": "21:30", "numbers": [8, 34, 56, 77, 85, 89], "joker": 6, "superstar": 32},
+  {"date": "2023-01-09", "drawNo": 4, "time": "21:30", "numbers": [4, 21, 23, 33, 35, 48], "joker": 12, "superstar": 73},
+  {"date": "2023-01-07", "drawNo": 3, "time": "21:30", "numbers": [21, 45, 51, 58, 63, 87], "joker": 15, "superstar": 44},
+  {"date": "2023-01-04", "drawNo": 2, "time": "21:30", "numbers": [5, 28, 48, 60, 63, 80], "joker": 46, "superstar": 62},
+  {"date": "2022-12-19", "drawNo": 152, "time": "21:30", "numbers": [32, 35, 42, 74, 80, 84], "joker": 58, "superstar": 83},
+  {"date": "2022-12-17", "drawNo": 151, "time": "21:30", "numbers": [7, 13, 39, 41, 65, 69], "joker": 45, "superstar": 66},
+  {"date": "2022-12-14", "drawNo": 150, "time": "21:30", "numbers": [13, 27, 29, 34, 58, 82], "joker": 38, "superstar": 13},
+  {"date": "2022-12-12", "drawNo": 149, "time": "21:30", "numbers": [6, 16, 27, 32, 62, 68], "joker": 57, "superstar": 42},
+  {"date": "2022-12-10", "drawNo": 148, "time": "21:30", "numbers": [1, 41, 59, 63, 65, 86], "joker": 27, "superstar": 60},
+  {"date": "2022-12-07", "drawNo": 147, "time": "21:30", "numbers": [4, 14, 26, 39, 47, 64], "joker": 11, "superstar": 53},
+  {"date": "2022-12-05", "drawNo": 146, "time": "21:30", "numbers": [38, 44, 51, 60, 66, 80], "joker": 11, "superstar": 14},
+  {"date": "2022-12-03", "drawNo": 145, "time": "21:30", "numbers": [4, 12, 14, 52, 68, 76], "joker": 57, "superstar": 67},
+  {"date": "2022-11-26", "drawNo": 142, "time": "21:30", "numbers": [2, 12, 21, 58, 63, 64], "joker": 70, "superstar": 26},
+  {"date": "2022-11-23", "drawNo": 141, "time": "21:30", "numbers": [2, 26, 27, 31, 60, 71], "joker": 14, "superstar": 77},
+  {"date": "2022-11-19", "drawNo": 139, "time": "21:30", "numbers": [9, 19, 41, 55, 63, 68], "joker": 11, "superstar": 89},
+  {"date": "2022-11-12", "drawNo": 136, "time": "21:30", "numbers": [28, 33, 52, 61, 68, 69], "joker": 70, "superstar": 41},
+  {"date": "2022-11-09", "drawNo": 135, "time": "21:30", "numbers": [14, 42, 46, 71, 77, 85], "joker": 64, "superstar": 82},
+  {"date": "2022-11-07", "drawNo": 134, "time": "21:30", "numbers": [37, 55, 58, 64, 66, 72], "joker": 16, "superstar": 79},
+  {"date": "2022-11-05", "drawNo": 133, "time": "21:30", "numbers": [28, 36, 44, 71, 78, 88], "joker": 65, "superstar": 4},
+  {"date": "2022-11-02", "drawNo": 132, "time": "21:30", "numbers": [6, 22, 23, 40, 78, 79], "joker": 74, "superstar": 1},
+  {"date": "2022-10-19", "drawNo": 126, "time": "21:30", "numbers": [23, 24, 29, 33, 60, 75], "joker": 85, "superstar": 36},
+  {"date": "2022-10-17", "drawNo": 125, "time": "21:30", "numbers": [6, 31, 61, 68, 71, 78], "joker": 18, "superstar": 2},
+  {"date": "2022-10-15", "drawNo": 124, "time": "21:30", "numbers": [13, 24, 27, 45, 65, 81], "joker": 88, "superstar": 48},
+  {"date": "2022-10-12", "drawNo": 123, "time": "21:30", "numbers": [4, 15, 18, 46, 85, 90], "joker": 86, "superstar": 26},
+  {"date": "2022-10-10", "drawNo": 122, "time": "21:30", "numbers": [14, 28, 46, 56, 57, 58], "joker": 40, "superstar": 37},
+  {"date": "2022-10-08", "drawNo": 121, "time": "21:30", "numbers": [14, 16, 30, 52, 63, 72], "joker": 28, "superstar": 40},
+  {"date": "2022-10-05", "drawNo": 120, "time": "21:30", "numbers": [1, 3, 25, 30, 62, 75], "joker": 17, "superstar": 56},
+  {"date": "2022-10-03", "drawNo": 119, "time": "21:30", "numbers": [21, 25, 35, 65, 78, 90], "joker": 32, "superstar": 74},
+  {"date": "2022-10-01", "drawNo": 118, "time": "21:30", "numbers": [22, 28, 43, 44, 45, 46], "joker": 29, "superstar": 47},
+  {"date": "2022-09-24", "drawNo": 115, "time": "21:30", "numbers": [2, 7, 15, 20, 21, 43], "joker": 25, "superstar": 47},
+  {"date": "2022-09-21", "drawNo": 114, "time": "21:30", "numbers": [1, 3, 41, 43, 49, 86], "joker": 62, "superstar": 56},
+  {"date": "2022-09-19", "drawNo": 113, "time": "21:30", "numbers": [15, 23, 35, 39, 56, 64], "joker": 9, "superstar": 17},
+  {"date": "2022-09-17", "drawNo": 112, "time": "21:30", "numbers": [55, 56, 60, 66, 79, 81], "joker": 4, "superstar": 5},
+  {"date": "2022-09-14", "drawNo": 111, "time": "21:30", "numbers": [18, 34, 52, 64, 66, 67], "joker": 60, "superstar": 23},
+  {"date": "2022-09-12", "drawNo": 110, "time": "21:30", "numbers": [12, 14, 24, 27, 65, 67], "joker": 31, "superstar": 74},
+  {"date": "2022-09-10", "drawNo": 109, "time": "21:30", "numbers": [13, 19, 27, 32, 35, 84], "joker": 74, "superstar": 60},
+  {"date": "2022-09-07", "drawNo": 108, "time": "21:30", "numbers": [8, 22, 25, 37, 70, 78], "joker": 46, "superstar": 50},
+  {"date": "2022-09-05", "drawNo": 107, "time": "21:30", "numbers": [9, 16, 39, 49, 56, 77], "joker": 73, "superstar": 86},
+  {"date": "2022-09-03", "drawNo": 106, "time": "21:30", "numbers": [33, 36, 41, 43, 69, 74], "joker": 6, "superstar": 80},
+  {"date": "2022-08-27", "drawNo": 103, "time": "21:30", "numbers": [5, 9, 28, 29, 50, 81], "joker": 89, "superstar": 84},
+  {"date": "2022-08-24", "drawNo": 102, "time": "21:30", "numbers": [3, 22, 38, 77, 82, 87], "joker": 56, "superstar": 71},
+  {"date": "2022-08-22", "drawNo": 101, "time": "21:30", "numbers": [10, 12, 14, 31, 60, 69], "joker": 4, "superstar": 86},
+  {"date": "2022-08-20", "drawNo": 100, "time": "21:30", "numbers": [34, 37, 44, 66, 74, 83], "joker": 68, "superstar": 2},
+  {"date": "2022-08-17", "drawNo": 99, "time": "21:30", "numbers": [11, 26, 28, 64, 74, 87], "joker": 67, "superstar": 52},
+  {"date": "2022-08-10", "drawNo": 96, "time": "21:30", "numbers": [9, 13, 19, 28, 46, 69], "joker": 88, "superstar": 28},
+  {"date": "2022-08-08", "drawNo": 95, "time": "21:30", "numbers": [13, 17, 26, 29, 34, 90], "joker": 72, "superstar": 21},
+  {"date": "2022-08-06", "drawNo": 94, "time": "21:30", "numbers": [11, 13, 16, 28, 53, 58], "joker": 77, "superstar": 23},
+  {"date": "2022-07-30", "drawNo": 91, "time": "21:30", "numbers": [16, 18, 43, 53, 58, 78], "joker": 46, "superstar": 71},
+  {"date": "2022-07-27", "drawNo": 90, "time": "21:30", "numbers": [3, 4, 19, 84, 85, 87], "joker": 11, "superstar": 68},
+  {"date": "2022-07-25", "drawNo": 89, "time": "21:30", "numbers": [8, 15, 23, 34, 46, 73], "joker": 47, "superstar": 39},
+  {"date": "2022-07-18", "drawNo": 86, "time": "21:30", "numbers": [9, 11, 27, 51, 62, 72], "joker": 18, "superstar": 81},
+  {"date": "2022-07-13", "drawNo": 84, "time": "21:30", "numbers": [3, 8, 21, 46, 60, 90], "joker": 57, "superstar": 87},
+  {"date": "2022-07-06", "drawNo": 81, "time": "21:30", "numbers": [46, 79, 81, 82, 83, 88], "joker": 52, "superstar": 85},
+  {"date": "2022-07-02", "drawNo": 79, "time": "21:30", "numbers": [12, 36, 42, 71, 86, 89], "joker": 33, "superstar": 62},
+  {"date": "2022-06-29", "drawNo": 78, "time": "21:30", "numbers": [1, 12, 19, 22, 53, 67], "joker": 65, "superstar": 5},
+  {"date": "2022-06-27", "drawNo": 77, "time": "21:30", "numbers": [25, 45, 48, 55, 79, 82], "joker": null, "superstar": null},
+  {"date": "2022-06-22", "drawNo": 75, "time": "21:30", "numbers": [16, 18, 36, 37, 69, 77], "joker": 57, "superstar": 3},
+  {"date": "2022-06-18", "drawNo": 73, "time": "21:30", "numbers": [10, 20, 36, 49, 67, 71], "joker": 56, "superstar": 19},
+  {"date": "2022-06-15", "drawNo": 72, "time": "21:30", "numbers": [7, 22, 28, 57, 86, 89], "joker": 17, "superstar": 30},
+  {"date": "2022-06-13", "drawNo": 71, "time": "21:30", "numbers": [2, 3, 25, 57, 60, 86], "joker": 45, "superstar": 6},
+  {"date": "2022-06-11", "drawNo": 70, "time": "21:30", "numbers": [4, 29, 55, 64, 72, 83], "joker": 24, "superstar": 84},
+  {"date": "2022-06-04", "drawNo": 67, "time": "21:30", "numbers": [23, 42, 57, 71, 79, 89], "joker": 80, "superstar": 77},
+  {"date": "2022-05-28", "drawNo": 64, "time": "21:30", "numbers": [9, 20, 26, 35, 38, 78], "joker": 72, "superstar": 81},
+  {"date": "2022-05-25", "drawNo": 63, "time": "21:30", "numbers": [4, 18, 24, 34, 60, 86], "joker": 8, "superstar": 21},
+  {"date": "2022-05-21", "drawNo": 61, "time": "21:30", "numbers": [21, 46, 62, 73, 87, 90], "joker": 86, "superstar": 53},
+  {"date": "2022-05-18", "drawNo": 60, "time": "21:30", "numbers": [14, 23, 43, 57, 74, 88], "joker": 28, "superstar": 61},
+  {"date": "2022-05-16", "drawNo": 59, "time": "21:30", "numbers": [26, 53, 56, 57, 67, 80], "joker": 2, "superstar": 81},
+  {"date": "2022-05-11", "drawNo": 57, "time": "21:30", "numbers": [11, 27, 54, 57, 65, 82], "joker": 78, "superstar": 63},
+  {"date": "2022-05-09", "drawNo": 56, "time": "21:30", "numbers": [7, 10, 32, 53, 63, 75], "joker": 37, "superstar": 50},
+  {"date": "2022-05-07", "drawNo": 55, "time": "21:30", "numbers": [7, 8, 12, 35, 68, 73], "joker": 77, "superstar": 57},
+  {"date": "2022-05-04", "drawNo": 54, "time": "21:30", "numbers": [26, 35, 39, 43, 48, 51], "joker": 67, "superstar": 69},
+  {"date": "2022-04-30", "drawNo": 52, "time": "21:30", "numbers": [9, 12, 36, 39, 57, 72], "joker": 37, "superstar": 46},
+  {"date": "2022-04-25", "drawNo": 50, "time": "21:30", "numbers": [2, 47, 48, 61, 75, 84], "joker": 52, "superstar": 41},
+  {"date": "2022-04-23", "drawNo": 49, "time": "21:30", "numbers": [1, 3, 31, 70, 83, 86], "joker": 18, "superstar": 34},
+  {"date": "2022-04-20", "drawNo": 48, "time": "21:30", "numbers": [4, 13, 15, 75, 79, 86], "joker": 12, "superstar": 69},
+  {"date": "2022-04-18", "drawNo": 47, "time": "21:30", "numbers": [25, 27, 38, 68, 73, 88], "joker": 49, "superstar": 23},
+  {"date": "2022-04-16", "drawNo": 46, "time": "21:30", "numbers": [16, 22, 47, 78, 79, 80], "joker": 23, "superstar": 75},
+  {"date": "2022-04-13", "drawNo": 45, "time": "21:30", "numbers": [6, 38, 49, 62, 72, 82], "joker": 40, "superstar": 65},
+  {"date": "2022-04-11", "drawNo": 44, "time": "21:30", "numbers": [26, 31, 33, 46, 60, 72], "joker": 84, "superstar": 15},
+  {"date": "2022-04-09", "drawNo": 43, "time": "21:30", "numbers": [3, 6, 23, 53, 62, 71], "joker": 90, "superstar": 28},
+  {"date": "2022-03-30", "drawNo": 39, "time": "21:30", "numbers": [1, 13, 49, 56, 78, 88], "joker": 19, "superstar": 13},
+  {"date": "2022-03-28", "drawNo": 38, "time": "21:30", "numbers": [5, 33, 36, 51, 68, 78], "joker": 15, "superstar": 5},
+  {"date": "2022-03-26", "drawNo": 37, "time": "21:30", "numbers": [8, 11, 22, 41, 44, 59], "joker": 19, "superstar": 59},
+  {"date": "2022-03-23", "drawNo": 36, "time": "21:30", "numbers": [6, 13, 19, 31, 70, 84], "joker": 51, "superstar": 70},
+  {"date": "2022-03-21", "drawNo": 35, "time": "21:30", "numbers": [15, 18, 49, 56, 68, 79], "joker": 47, "superstar": 80},
+  {"date": "2022-03-19", "drawNo": 34, "time": "21:30", "numbers": [9, 20, 22, 23, 25, 86], "joker": 2, "superstar": 82},
+  {"date": "2022-03-16", "drawNo": 33, "time": "21:30", "numbers": [31, 40, 42, 45, 73, 89], "joker": 90, "superstar": 47},
+  {"date": "2022-03-14", "drawNo": 32, "time": "21:30", "numbers": [19, 32, 40, 42, 47, 58], "joker": 61, "superstar": 42},
+  {"date": "2022-03-12", "drawNo": 31, "time": "21:30", "numbers": [25, 29, 44, 61, 76, 79], "joker": 35, "superstar": 40},
+  {"date": "2022-03-09", "drawNo": 30, "time": "21:30", "numbers": [15, 32, 68, 69, 81, 84], "joker": 29, "superstar": 17},
+  {"date": "2022-03-07", "drawNo": 29, "time": "21:30", "numbers": [9, 25, 41, 52, 78, 86], "joker": 57, "superstar": 5},
+  {"date": "2022-03-05", "drawNo": 28, "time": "21:30", "numbers": [18, 19, 42, 47, 53, 89], "joker": 73, "superstar": 89},
+  {"date": "2022-03-02", "drawNo": 27, "time": "21:30", "numbers": [25, 69, 70, 76, 81, 84], "joker": 12, "superstar": 61},
+  {"date": "2022-02-28", "drawNo": 26, "time": "21:30", "numbers": [14, 23, 40, 41, 42, 53], "joker": 46, "superstar": 5},
+  {"date": "2022-02-26", "drawNo": 25, "time": "21:30", "numbers": [18, 59, 64, 74, 79, 80], "joker": 85, "superstar": 31},
+  {"date": "2022-02-19", "drawNo": 22, "time": "21:30", "numbers": [5, 11, 12, 18, 34, 85], "joker": 37, "superstar": 49},
+  {"date": "2022-02-16", "drawNo": 21, "time": "21:30", "numbers": [28, 39, 42, 68, 71, 74], "joker": 19, "superstar": 37},
+  {"date": "2022-02-14", "drawNo": 20, "time": "21:30", "numbers": [23, 25, 37, 43, 45, 67], "joker": 87, "superstar": 54},
+  {"date": "2022-02-12", "drawNo": 19, "time": "21:30", "numbers": [23, 33, 38, 62, 80, 90], "joker": 79, "superstar": 40},
+  {"date": "2022-02-09", "drawNo": 18, "time": "21:30", "numbers": [9, 29, 43, 60, 68, 69], "joker": 56, "superstar": 81},
+  {"date": "2022-02-07", "drawNo": 17, "time": "21:30", "numbers": [1, 12, 51, 57, 64, 76], "joker": 78, "superstar": 44},
+  {"date": "2022-02-02", "drawNo": 15, "time": "21:30", "numbers": [31, 38, 40, 42, 50, 71], "joker": 64, "superstar": 53},
+  {"date": "2022-01-26", "drawNo": 12, "time": "21:30", "numbers": [30, 50, 58, 71, 87, 88], "joker": 15, "superstar": 17},
+  {"date": "2022-01-24", "drawNo": 11, "time": "21:30", "numbers": [6, 24, 37, 56, 71, 83], "joker": 10, "superstar": 36},
+  {"date": "2022-01-19", "drawNo": 9, "time": "21:30", "numbers": [17, 40, 47, 50, 63, 75], "joker": 14, "superstar": 40},
+  {"date": "2022-01-17", "drawNo": 8, "time": "21:30", "numbers": [4, 25, 32, 44, 67, 75], "joker": 54, "superstar": 78},
+  {"date": "2022-01-15", "drawNo": 7, "time": "21:30", "numbers": [6, 19, 22, 23, 27, 84], "joker": 26, "superstar": 25},
+  {"date": "2022-01-12", "drawNo": 6, "time": "21:30", "numbers": [1, 9, 39, 59, 64, 68], "joker": 55, "superstar": 24},
+  {"date": "2022-01-10", "drawNo": 5, "time": "21:30", "numbers": [36, 55, 60, 64, 70, 86], "joker": 44, "superstar": 56},
+  {"date": "2022-01-08", "drawNo": 4, "time": "21:30", "numbers": [18, 39, 49, 60, 75, 77], "joker": 13, "superstar": 87},
+  {"date": "2022-01-03", "drawNo": 2, "time": "21:30", "numbers": [25, 36, 45, 57, 70, 87], "joker": 86, "superstar": 46},
+  {"date": "2021-12-29", "drawNo": 156, "time": "21:30", "numbers": [34, 43, 47, 57, 73, 89], "joker": 85, "superstar": 35},
+  {"date": "2021-12-27", "drawNo": 155, "time": "21:30", "numbers": [6, 36, 54, 55, 85, 88], "joker": 64, "superstar": 44},
+  {"date": "2021-12-25", "drawNo": 154, "time": "21:30", "numbers": [10, 45, 53, 66, 77, 88], "joker": 64, "superstar": 49},
+  {"date": "2021-12-22", "drawNo": 153, "time": "21:30", "numbers": [6, 12, 14, 48, 55, 72], "joker": 18, "superstar": 2},
+  {"date": "2021-12-18", "drawNo": 151, "time": "21:30", "numbers": [2, 13, 14, 33, 63, 88], "joker": 70, "superstar": 27},
+  {"date": "2021-12-15", "drawNo": 150, "time": "21:30", "numbers": [2, 21, 24, 45, 83, 84], "joker": 58, "superstar": 35},
+  {"date": "2021-12-13", "drawNo": 149, "time": "21:30", "numbers": [1, 9, 18, 41, 56, 79], "joker": 83, "superstar": 11},
+  {"date": "2021-12-11", "drawNo": 148, "time": "21:30", "numbers": [18, 33, 41, 59, 77, 87], "joker": 6, "superstar": 24},
+  {"date": "2021-12-08", "drawNo": 147, "time": "21:30", "numbers": [5, 17, 26, 44, 58, 71], "joker": 63, "superstar": 56},
+  {"date": "2021-12-06", "drawNo": 146, "time": "21:30", "numbers": [35, 37, 38, 56, 79, 88], "joker": 36, "superstar": 26},
+  {"date": "2021-12-04", "drawNo": 145, "time": "21:30", "numbers": [15, 36, 39, 45, 81, 89], "joker": 69, "superstar": 22},
+  {"date": "2021-11-27", "drawNo": 142, "time": "21:30", "numbers": [17, 43, 46, 61, 69, 89], "joker": 41, "superstar": 56},
+  {"date": "2021-11-24", "drawNo": 141, "time": "21:30", "numbers": [32, 52, 71, 73, 77, 84], "joker": 15, "superstar": 16},
+  {"date": "2021-11-22", "drawNo": 140, "time": "21:30", "numbers": [7, 47, 48, 62, 69, 83], "joker": 23, "superstar": 83},
+  {"date": "2021-11-20", "drawNo": 139, "time": "21:30", "numbers": [13, 43, 48, 53, 63, 67], "joker": 74, "superstar": 13},
+  {"date": "2021-11-17", "drawNo": 138, "time": "21:30", "numbers": [53, 56, 61, 65, 71, 81], "joker": 16, "superstar": 55},
+  {"date": "2021-11-15", "drawNo": 137, "time": "21:30", "numbers": [13, 15, 43, 51, 71, 88], "joker": 50, "superstar": 84},
+  {"date": "2021-11-13", "drawNo": 136, "time": "21:30", "numbers": [31, 47, 67, 74, 79, 86], "joker": 29, "superstar": 65},
+  {"date": "2021-11-10", "drawNo": 135, "time": "21:30", "numbers": [8, 31, 32, 55, 65, 71], "joker": 84, "superstar": 21},
+  {"date": "2021-11-08", "drawNo": 134, "time": "21:30", "numbers": [16, 25, 36, 54, 56, 61], "joker": 4, "superstar": 84},
+  {"date": "2021-11-06", "drawNo": 133, "time": "21:30", "numbers": [23, 35, 37, 52, 59, 65], "joker": 73, "superstar": 28},
+  {"date": "2021-11-03", "drawNo": 132, "time": "21:30", "numbers": [16, 24, 40, 57, 68, 78], "joker": 37, "superstar": 1},
+  {"date": "2021-11-01", "drawNo": 131, "time": "21:30", "numbers": [34, 44, 62, 69, 72, 86], "joker": 27, "superstar": 70},
+  {"date": "2021-10-30", "drawNo": 130, "time": "21:30", "numbers": [36, 40, 41, 54, 55, 64], "joker": 48, "superstar": 16},
+  {"date": "2021-10-27", "drawNo": 129, "time": "21:30", "numbers": [2, 18, 25, 36, 45, 65], "joker": 26, "superstar": 24},
+  {"date": "2021-10-25", "drawNo": 128, "time": "21:30", "numbers": [7, 22, 30, 37, 60, 67], "joker": 61, "superstar": 31},
+  {"date": "2021-10-23", "drawNo": 127, "time": "21:30", "numbers": [26, 36, 49, 74, 80, 81], "joker": 61, "superstar": 16},
+  {"date": "2021-10-20", "drawNo": 126, "time": "21:30", "numbers": [5, 11, 30, 40, 56, 61], "joker": 46, "superstar": 62},
+  {"date": "2021-10-18", "drawNo": 125, "time": "21:30", "numbers": [23, 26, 34, 44, 46, 56], "joker": 49, "superstar": null},
+  {"date": "2021-10-16", "drawNo": 124, "time": "21:30", "numbers": [17, 24, 27, 47, 57, 68], "joker": 13, "superstar": null},
+  {"date": "2021-10-13", "drawNo": 123, "time": "21:30", "numbers": [5, 39, 58, 60, 66, 75], "joker": 86, "superstar": null},
+  {"date": "2021-10-11", "drawNo": 122, "time": "21:30", "numbers": [17, 42, 50, 76, 84, 89], "joker": 12, "superstar": null},
+  {"date": "2021-10-09", "drawNo": 121, "time": "21:30", "numbers": [16, 18, 50, 52, 69, 86], "joker": 17, "superstar": null},
+  {"date": "2021-10-06", "drawNo": 120, "time": "21:30", "numbers": [2, 3, 4, 36, 44, 89], "joker": 34, "superstar": null},
+  {"date": "2021-10-04", "drawNo": 119, "time": "21:30", "numbers": [1, 19, 26, 41, 69, 77], "joker": 90, "superstar": null},
+  {"date": "2021-10-02", "drawNo": 118, "time": "21:30", "numbers": [15, 33, 43, 63, 80, 90], "joker": 86, "superstar": null},
+  {"date": "2021-09-29", "drawNo": 117, "time": "21:30", "numbers": [11, 14, 24, 47, 67, 84], "joker": 90, "superstar": null},
+  {"date": "2021-09-27", "drawNo": 116, "time": "21:30", "numbers": [29, 32, 50, 61, 80, 84], "joker": 24, "superstar": null},
+  {"date": "2021-09-25", "drawNo": 115, "time": "21:30", "numbers": [4, 22, 24, 27, 72, 77], "joker": 32, "superstar": null},
+  {"date": "2021-09-22", "drawNo": 114, "time": "21:30", "numbers": [11, 13, 37, 42, 59, 82], "joker": 78, "superstar": null},
+  {"date": "2021-09-20", "drawNo": 113, "time": "21:30", "numbers": [1, 12, 15, 16, 20, 70], "joker": 54, "superstar": null},
+  {"date": "2021-09-18", "drawNo": 112, "time": "21:30", "numbers": [9, 19, 47, 48, 67, 90], "joker": 20, "superstar": null},
+  {"date": "2021-09-15", "drawNo": 111, "time": "21:30", "numbers": [6, 33, 49, 65, 68, 80], "joker": 20, "superstar": null},
+  {"date": "2021-09-13", "drawNo": 110, "time": "21:30", "numbers": [9, 12, 20, 25, 41, 89], "joker": 76, "superstar": null},
+  {"date": "2021-09-11", "drawNo": 109, "time": "21:30", "numbers": [3, 4, 11, 18, 19, 32], "joker": 28, "superstar": null},
+  {"date": "2021-09-08", "drawNo": 108, "time": "21:30", "numbers": [23, 51, 53, 58, 68, 75], "joker": 54, "superstar": null},
+  {"date": "2021-09-06", "drawNo": 107, "time": "21:30", "numbers": [16, 38, 50, 56, 77, 82], "joker": 85, "superstar": null},
+  {"date": "2021-09-04", "drawNo": 106, "time": "21:30", "numbers": [3, 21, 27, 32, 40, 49], "joker": 26, "superstar": null},
+  {"date": "2021-09-01", "drawNo": 105, "time": "21:30", "numbers": [5, 8, 21, 27, 50, 78], "joker": 20, "superstar": null},
+  {"date": "2021-08-30", "drawNo": 104, "time": "21:30", "numbers": [30, 46, 48, 68, 87, 88], "joker": 42, "superstar": null},
+  {"date": "2021-08-28", "drawNo": 103, "time": "21:30", "numbers": [16, 25, 58, 66, 80, 89], "joker": 55, "superstar": null},
+  {"date": "2021-08-25", "drawNo": 102, "time": "21:30", "numbers": [22, 34, 49, 54, 63, 89], "joker": 57, "superstar": null},
+  {"date": "2021-08-23", "drawNo": 101, "time": "21:30", "numbers": [12, 14, 23, 31, 32, 87], "joker": 77, "superstar": null},
+  {"date": "2021-08-18", "drawNo": 99, "time": "21:30", "numbers": [36, 41, 48, 59, 64, 84], "joker": 54, "superstar": null},
+  {"date": "2021-08-16", "drawNo": 98, "time": "21:30", "numbers": [29, 44, 45, 67, 84, 86], "joker": 5, "superstar": null},
+  {"date": "2021-08-14", "drawNo": 97, "time": "21:30", "numbers": [2, 5, 44, 64, 71, 80], "joker": 54, "superstar": null},
+  {"date": "2021-08-11", "drawNo": 96, "time": "21:30", "numbers": [8, 35, 38, 57, 74, 80], "joker": 16, "superstar": null},
+  {"date": "2021-08-09", "drawNo": 95, "time": "21:30", "numbers": [22, 30, 42, 44, 66, 77], "joker": 18, "superstar": null},
+  {"date": "2021-08-07", "drawNo": 94, "time": "21:30", "numbers": [6, 43, 49, 83, 85, 86], "joker": 55, "superstar": null},
+  {"date": "2021-08-02", "drawNo": 92, "time": "21:30", "numbers": [6, 10, 26, 65, 69, 90], "joker": 49, "superstar": null},
+  {"date": "2021-07-31", "drawNo": 91, "time": "21:30", "numbers": [8, 14, 15, 16, 36, 64], "joker": 33, "superstar": null},
+  {"date": "2021-07-28", "drawNo": 90, "time": "21:30", "numbers": [18, 20, 33, 40, 74, 86], "joker": 68, "superstar": null},
+  {"date": "2021-07-26", "drawNo": 89, "time": "21:30", "numbers": [1, 8, 50, 68, 83, 87], "joker": 43, "superstar": null},
+  {"date": "2021-07-24", "drawNo": 88, "time": "21:30", "numbers": [13, 24, 47, 73, 75, 76], "joker": 10, "superstar": null},
+  {"date": "2021-07-21", "drawNo": 87, "time": "21:30", "numbers": [8, 22, 52, 60, 83, 89], "joker": 39, "superstar": null},
+  {"date": "2021-07-19", "drawNo": 86, "time": "21:30", "numbers": [2, 9, 31, 61, 85, 88], "joker": 83, "superstar": null},
+  {"date": "2021-07-17", "drawNo": 85, "time": "21:30", "numbers": [1, 5, 6, 43, 52, 55], "joker": 84, "superstar": null},
+  {"date": "2021-07-14", "drawNo": 84, "time": "21:30", "numbers": [12, 44, 45, 52, 67, 71], "joker": 55, "superstar": null},
+  {"date": "2021-07-12", "drawNo": 83, "time": "21:30", "numbers": [2, 19, 23, 51, 73, 90], "joker": 42, "superstar": null},
+  {"date": "2021-07-10", "drawNo": 82, "time": "21:30", "numbers": [8, 46, 58, 66, 71, 73], "joker": 84, "superstar": null},
+  {"date": "2021-07-05", "drawNo": 80, "time": "21:30", "numbers": [29, 60, 62, 63, 76, 81], "joker": 87, "superstar": null},
+  {"date": "2021-06-21", "drawNo": 74, "time": "21:30", "numbers": [8, 25, 46, 52, 77, 79], "joker": 48, "superstar": null},
+  {"date": "2021-06-19", "drawNo": 73, "time": "21:30", "numbers": [21, 24, 25, 48, 72, 76], "joker": 43, "superstar": null},
+  {"date": "2021-06-12", "drawNo": 70, "time": "21:30", "numbers": [5, 13, 15, 37, 52, 78], "joker": 88, "superstar": null},
+  {"date": "2021-05-22", "drawNo": 61, "time": "21:30", "numbers": [1, 11, 56, 59, 80, 81], "joker": 40, "superstar": null},
+  {"date": "2021-05-19", "drawNo": 60, "time": "21:30", "numbers": [10, 11, 24, 53, 71, 90], "joker": 77, "superstar": null},
+  {"date": "2021-05-17", "drawNo": 59, "time": "21:30", "numbers": [21, 46, 48, 62, 89, 90], "joker": 6, "superstar": null},
+  {"date": "2021-05-15", "drawNo": 58, "time": "21:30", "numbers": [17, 29, 52, 74, 77, 85], "joker": 9, "superstar": null},
+  {"date": "2021-05-12", "drawNo": 57, "time": "21:30", "numbers": [13, 43, 45, 70, 76, 86], "joker": 7, "superstar": null},
+  {"date": "2021-05-01", "drawNo": 52, "time": "21:30", "numbers": [14, 15, 17, 54, 68, 82], "joker": 88, "superstar": null},
+  {"date": "2021-04-28", "drawNo": 51, "time": "21:30", "numbers": [1, 15, 32, 50, 55, 69], "joker": 17, "superstar": null},
+  {"date": "2021-04-26", "drawNo": 50, "time": "21:30", "numbers": [3, 34, 42, 52, 66, 70], "joker": 28, "superstar": null},
+  {"date": "2021-04-24", "drawNo": 49, "time": "21:30", "numbers": [6, 19, 29, 51, 62, 81], "joker": 30, "superstar": null},
+  {"date": "2021-04-21", "drawNo": 48, "time": "21:30", "numbers": [13, 33, 58, 74, 78, 89], "joker": 46, "superstar": null},
+  {"date": "2021-04-19", "drawNo": 47, "time": "21:30", "numbers": [12, 23, 56, 79, 82, 86], "joker": 5, "superstar": null},
+  {"date": "2021-04-17", "drawNo": 46, "time": "21:30", "numbers": [27, 39, 56, 73, 83, 84], "joker": 23, "superstar": null},
+  {"date": "2021-04-14", "drawNo": 45, "time": "21:30", "numbers": [2, 4, 21, 37, 63, 73], "joker": 81, "superstar": null},
+  {"date": "2021-04-12", "drawNo": 44, "time": "21:30", "numbers": [18, 48, 66, 72, 88, 90], "joker": 5, "superstar": null},
+  {"date": "2021-04-10", "drawNo": 43, "time": "21:30", "numbers": [5, 21, 30, 43, 45, 60], "joker": 39, "superstar": null},
+  {"date": "2021-04-07", "drawNo": 42, "time": "21:30", "numbers": [13, 53, 64, 69, 78, 80], "joker": 42, "superstar": null},
+  {"date": "2021-04-05", "drawNo": 41, "time": "21:30", "numbers": [19, 35, 39, 62, 64, 86], "joker": 90, "superstar": null},
+  {"date": "2021-04-03", "drawNo": 40, "time": "21:30", "numbers": [8, 34, 39, 65, 72, 73], "joker": 11, "superstar": null},
+  {"date": "2021-03-31", "drawNo": 39, "time": "21:30", "numbers": [1, 3, 59, 83, 84, 88], "joker": 37, "superstar": null},
+  {"date": "2021-03-29", "drawNo": 38, "time": "21:30", "numbers": [5, 21, 41, 51, 56, 66], "joker": 23, "superstar": null},
+  {"date": "2021-03-27", "drawNo": 37, "time": "21:30", "numbers": [3, 11, 21, 28, 62, 83], "joker": 7, "superstar": null},
+  {"date": "2021-03-24", "drawNo": 36, "time": "21:30", "numbers": [3, 4, 11, 22, 37, 88], "joker": 43, "superstar": null},
+  {"date": "2021-03-22", "drawNo": 35, "time": "21:30", "numbers": [9, 12, 39, 64, 70, 89], "joker": 40, "superstar": null},
+  {"date": "2021-03-20", "drawNo": 34, "time": "21:30", "numbers": [6, 22, 28, 50, 72, 90], "joker": 74, "superstar": null},
+  {"date": "2021-03-17", "drawNo": 33, "time": "21:30", "numbers": [7, 13, 15, 69, 78, 79], "joker": 10, "superstar": null},
+  {"date": "2021-03-15", "drawNo": 32, "time": "21:30", "numbers": [23, 27, 37, 56, 79, 83], "joker": 71, "superstar": null},
+  {"date": "2021-03-13", "drawNo": 31, "time": "21:30", "numbers": [11, 19, 25, 32, 54, 71], "joker": 61, "superstar": null},
+  {"date": "2021-03-08", "drawNo": 29, "time": "21:30", "numbers": [22, 38, 45, 47, 70, 87], "joker": 24, "superstar": null},
+  {"date": "2021-03-06", "drawNo": 28, "time": "21:30", "numbers": [8, 12, 20, 31, 45, 87], "joker": 62, "superstar": null},
+  {"date": "2021-03-03", "drawNo": 27, "time": "21:30", "numbers": [2, 11, 13, 34, 47, 74], "joker": 84, "superstar": null},
+  {"date": "2021-03-01", "drawNo": 26, "time": "21:30", "numbers": [5, 30, 46, 60, 69, 84], "joker": 1, "superstar": null},
+  {"date": "2021-02-27", "drawNo": 25, "time": "21:30", "numbers": [2, 14, 29, 30, 69, 80], "joker": 53, "superstar": null},
+  {"date": "2021-02-24", "drawNo": 24, "time": "21:30", "numbers": [9, 26, 30, 43, 54, 73], "joker": 63, "superstar": null},
+  {"date": "2021-02-22", "drawNo": 23, "time": "21:30", "numbers": [23, 35, 59, 64, 75, 81], "joker": 66, "superstar": null},
+  {"date": "2021-02-20", "drawNo": 22, "time": "21:30", "numbers": [11, 26, 33, 63, 69, 83], "joker": 45, "superstar": null},
+  {"date": "2021-02-17", "drawNo": 21, "time": "21:30", "numbers": [10, 12, 57, 75, 80, 83], "joker": 25, "superstar": null},
+  {"date": "2021-02-15", "drawNo": 20, "time": "21:30", "numbers": [8, 11, 16, 47, 64, 87], "joker": 15, "superstar": null},
+  {"date": "2021-02-13", "drawNo": 19, "time": "21:30", "numbers": [3, 20, 24, 47, 63, 69], "joker": 32, "superstar": null},
+  {"date": "2021-02-10", "drawNo": 18, "time": "21:30", "numbers": [21, 24, 31, 38, 46, 71], "joker": 10, "superstar": null},
+  {"date": "2021-02-08", "drawNo": 17, "time": "21:30", "numbers": [1, 5, 13, 33, 40, 52], "joker": 12, "superstar": null},
+  {"date": "2021-02-06", "drawNo": 16, "time": "21:30", "numbers": [24, 32, 33, 34, 45, 61], "joker": 81, "superstar": null},
+  {"date": "2021-02-03", "drawNo": 15, "time": "21:30", "numbers": [5, 41, 45, 52, 65, 89], "joker": 20, "superstar": null},
+  {"date": "2021-02-01", "drawNo": 14, "time": "21:30", "numbers": [15, 51, 55, 60, 62, 90], "joker": 11, "superstar": null},
+  {"date": "2021-01-27", "drawNo": 12, "time": "21:30", "numbers": [20, 62, 64, 71, 73, 78], "joker": 18, "superstar": null},
+  {"date": "2021-01-25", "drawNo": 11, "time": "21:30", "numbers": [15, 18, 61, 70, 74, 90], "joker": 29, "superstar": null},
+  {"date": "2021-01-23", "drawNo": 10, "time": "21:30", "numbers": [4, 5, 18, 37, 41, 60], "joker": 40, "superstar": null},
+  {"date": "2021-01-20", "drawNo": 9, "time": "21:30", "numbers": [19, 24, 39, 61, 63, 73], "joker": 6, "superstar": null},
+  {"date": "2021-01-18", "drawNo": 8, "time": "21:30", "numbers": [23, 29, 43, 68, 88, 90], "joker": null, "superstar": null},
+  {"date": "2021-01-16", "drawNo": 7, "time": "21:30", "numbers": [43, 71, 73, 75, 86, 88], "joker": 79, "superstar": null},
+  {"date": "2021-01-13", "drawNo": 6, "time": "21:30", "numbers": [18, 28, 41, 57, 71, 88], "joker": 58, "superstar": null},
+  {"date": "2021-01-11", "drawNo": 5, "time": "21:30", "numbers": [6, 20, 32, 54, 73, 88], "joker": 11, "superstar": null},
+  {"date": "2021-01-09", "drawNo": 4, "time": "21:30", "numbers": [8, 32, 33, 62, 82, 83], "joker": 43, "superstar": null},
+  {"date": "2021-01-06", "drawNo": 3, "time": "21:30", "numbers": [1, 32, 60, 62, 63, 74], "joker": 20, "superstar": null},
+  {"date": "2021-01-04", "drawNo": 2, "time": "21:30", "numbers": [6, 7, 41, 63, 81, 83], "joker": 18, "superstar": null},
+  {"date": "2021-01-02", "drawNo": 1, "time": "21:30", "numbers": [3, 7, 9, 22, 27, 70], "joker": 20, "superstar": null}
+ ]
+}
+</script>
+<script>
+  // Sayfa gömülü sonuçlarla açılır; data/results.json bulunursa onunla günceller.
+  (function () {
+    var longDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "Europe/Istanbul" });
+    var dayName = new Intl.DateTimeFormat("tr-TR", { weekday: "long", timeZone: "Europe/Istanbul" });
+    var shortDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", timeZone: "Europe/Istanbul" });
+    function asDate(s) { return new Date(s + "T12:00:00+03:00"); }
+    function ball(n, cls, tag) {
+      var el = document.createElement(tag || "span");
+      el.className = "ball" + (cls ? " " + cls : "");
+      el.textContent = n ?? "–";
+      return el;
+    }
+    function valid(d) { return d && Array.isArray(d.numbers) && d.numbers.length === 6; }
+
+    // Gömülü/çekilen sonuçlar `base`, elle girilenler `manual`; aynı tarih iki yerde varsa doğrulanmış kayıt kazanır.
+    var base = null, manual = [];
+    function merged() {
+      var have = {};
+      base.draws.forEach(function (d) { have[d.date] = true; });
+      var extra = manual.filter(function (m) { return !have[m.date]; });
+      return Object.assign({}, base, { draws: base.draws.concat(extra) });
+    }
+    function render(data) {
+      if (!data || !Array.isArray(data.draws)) return;
+      base = data;
+      paint(merged());
+      entryRefresh();
+    }
+
+    // Geçmiş listesi: Ay ve Yıl filtresine göre ("" = tümü).
+    var allDraws = [];
+    var MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    var monthName = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    var yearDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    var yearSel = document.getElementById("filter-year"), monthSel = document.getElementById("filter-month");
+    MONTHS.forEach(function (m, i) { monthSel.add(new Option(m, String(i + 1).padStart(2, "0"))); });
+    function fillYears() {
+      var keep = yearSel.value;
+      var years = Array.from(new Set(allDraws.map(function (d) { return d.date.slice(0, 4); })));
+      yearSel.length = 1;
+      years.forEach(function (y) { yearSel.add(new Option(y, y)); });
+      yearSel.value = years.indexOf(keep) >= 0 ? keep : "";
+    }
+    function drawRows() {
+      var y = yearSel.value, mo = monthSel.value;
+      var draws = allDraws.filter(function (d) {
+        return (!y || d.date.slice(0, 4) === y) && (!mo || d.date.slice(5, 7) === mo);
+      });
+      var rows = document.getElementById("rows");
+      rows.innerHTML = "";
+      var lastMonth = "";
+    draws.forEach(function (d) {
+      var m = d.date.slice(0, 7);
+      if (m !== lastMonth) {
+        lastMonth = m;
+        var head = document.createElement("li");
+        head.className = "month";
+        head.textContent = monthName.format(asDate(d.date));
+        rows.appendChild(head);
+      }
+      var li = document.createElement("li");
+      li.className = "row";
+      var t = document.createElement("time");
+      t.dateTime = d.date;
+      t.textContent = shortDate.format(asDate(d.date));
+      var small = document.createElement("small");
+      small.textContent = dayName.format(asDate(d.date)) + (d.drawNo ? " · " + d.drawNo + ". çekiliş" : "");
+      t.appendChild(small);
+      if (d.manual) {
+        var tag = document.createElement("small");
+        tag.className = "tag";
+        tag.textContent = "Elle eklendi";
+        t.appendChild(tag);
+      }
+      var set = document.createElement("div");
+      set.className = "set";
+      set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + (d.superstar ?? "bilinmiyor"));
+      d.numbers.forEach(function (n) { set.appendChild(ball(n)); });
+      var sep = document.createElement("span");
+      sep.className = "sep";
+      set.appendChild(sep);
+      set.appendChild(ball(d.joker, "joker"));
+      set.appendChild(ball(d.superstar, "star"));
+      li.appendChild(t);
+      li.appendChild(set);
+      rows.appendChild(li);
+    });
+      var sub = document.getElementById("history-sub");
+      var period = (mo ? MONTHS[+mo - 1] + " " : "") + (y || (mo ? "(tüm yıllar)" : ""));
+      if (!draws.length) {
+        sub.textContent = (period || "Bu seçim") + " için kayıtlı çekiliş yok.";
+        return;
+      }
+      var first = draws[draws.length - 1], latest = draws[0];
+      sub.textContent = (period ? period + ": " : "") + yearDate.format(asDate(first.date)) + " – " + yearDate.format(asDate(latest.date)) +
+        " arası " + draws.length + " çekiliş. Çekilişler Pazartesi, Çarşamba ve Cumartesi 21:30'da yapılır.";
+    }
+    yearSel.addEventListener("change", drawRows);
+    monthSel.addEventListener("change", drawRows);
+
+    function paint(data) {
+      var draws = data.draws.filter(valid).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      if (!draws.length) return;
+      var last = draws[0];
+
+      document.getElementById("game").textContent = data.game || "Sayısal Loto";
+      var when = document.getElementById("when");
+      when.innerHTML = "";
+      var strong = document.createElement("strong");
+      strong.textContent = longDate.format(asDate(last.date));
+      when.appendChild(strong);
+      if (last.time) when.appendChild(document.createTextNode(", " + last.time));
+      if (last.drawNo) when.appendChild(document.createTextNode(" · " + last.drawNo + ". çekiliş"));
+
+      var rack = document.getElementById("numbers");
+      rack.innerHTML = "";
+      last.numbers.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+      document.getElementById("joker").textContent = last.joker ?? "–";
+      document.getElementById("superstar").textContent = last.superstar ?? "–";
+      var note = document.getElementById("note");
+      note.textContent = last.note || "";
+      note.hidden = !last.note;
+
+      allDraws = draws;
+      fillYears();
+      drawRows();
+
+      buildModel(draws);
+      predict();
+      checkRender();
+
+      if (data.updatedAt) {
+        document.getElementById("stamp").textContent = "Güncellendi: " +
+          new Date(data.updatedAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+      }
+    }
+
+    // Tahmin: sıralı 6'lıda yan yana duran (1-2, 2-3 … 5-6. slot) çiftler; Joker ve SüperStar hariç.
+    // Ham yüzde (X'ten sonra Y'nin gelme oranı) aralığı dar çiftleri ve 89→90 gibi uç çiftleri kendiliğinden şişirir,
+    // bu yüzden her çift gerçekleşen oranın rastgelelikte beklenen orana bölümüyle (oran/beklenen) puanlanır.
+    var CANDIDATES = 20000, KEEP = 0.01;
+    var model = null;
+    function comb(n, k) {
+      if (k < 0 || n < k) return 0;
+      var r = 1;
+      for (var i = 1; i <= k; i++) r = r * (n - k + i) / i;
+      return r;
+    }
+    function buildModel(draws) {
+      var pair = {}, out = new Array(91).fill(0), seen = new Array(91).fill(0);
+      draws.forEach(function (d) {
+        var s = d.numbers.slice().sort(function (a, b) { return a - b; });
+        s.forEach(function (n) { seen[n]++; });
+        for (var i = 0; i < 5; i++) {
+          var k = s[i] * 100 + s[i + 1];
+          pair[k] = (pair[k] || 0) + 1;
+          out[s[i]]++;
+        }
+      });
+      model = { pair: pair, out: out, seen: seen, draws: draws.length, list: draws, c895: comb(89, 5) };
+    }
+    function pairStats(x, y) {
+      var count = model.pair[x * 100 + y] || 0;
+      // X çekilişteyse X'ten büyük ilk sayının Y olma olasılığı: C(89-(Y-X), 4) / C(89, 5)
+      var expected = model.seen[x] * comb(89 - (y - x), 4) / model.c895;
+      return { count: count, expected: expected, out: model.out[x], lift: (count + 1) / (expected + 1) };
+    }
+    function randomSet() {
+      var picked = new Set(), buf = new Uint32Array(1);
+      while (picked.size < 6) {
+        crypto.getRandomValues(buf);
+        picked.add(1 + buf[0] % 90);
+      }
+      return Array.from(picked).sort(function (a, b) { return a - b; });
+    }
+    function score(s) {
+      var t = 0;
+      for (var i = 0; i < 5; i++) t += pairStats(s[i], s[i + 1]).lift;
+      return t / 5;
+    }
+    var pct = new Intl.NumberFormat("tr-TR", { style: "percent", maximumFractionDigits: 1 });
+    function predict() {
+      if (!model) return;
+      var pool = [];
+      for (var i = 0; i < CANDIDATES; i++) {
+        var s = randomSet();
+        pool.push({ s: s, score: score(s) });
+      }
+      pool.sort(function (a, b) { return b.score - a.score; });
+      var keep = Math.round(CANDIDATES * KEEP);
+      var buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      var pick = pool[buf[0] % keep].s;
+      lastPick = pick;
+
+      var rack = document.getElementById("predict-numbers");
+      rack.innerHTML = "";
+      pick.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+
+      var list = document.getElementById("predict-pairs");
+      list.innerHTML = "";
+      for (var j = 0; j < 5; j++) {
+        var x = pick[j], y = pick[j + 1], st = pairStats(x, y);
+        var li = document.createElement("li");
+        var b = document.createElement("b");
+        b.textContent = (j + 1) + "–" + (j + 2) + ". slot: " + x + " → " + y;
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(
+          st.out ? pct.format(st.count / st.out) + " (beklenen " + pct.format(st.expected / st.out) + ") · " + st.count + " kez"
+                 : "geçmişte yok"));
+        list.appendChild(li);
+      }
+      document.getElementById("predict-note").textContent =
+        CANDIDATES.toLocaleString("tr-TR") + " rastgele kombinasyon üretildi. 5 çiftinin geçmiş " + model.draws +
+        " çekilişteki oranı, beklenen orana göre en yüksek olan %" + KEEP * 100 + "'lik dilimden (" + keep +
+        " kombinasyon) biri rastgele seçildi. Her 6'lının çıkma olasılığı aynıdır (622.614.630'da 1); bu filtre kazanma şansını artırmaz.";
+    }
+    document.getElementById("predict-btn").addEventListener("click", predict);
+
+    // Kendi 6'lını değerlendir. Gerçek olasılık hipergeometrik dağılımdan gelir ve analizden bağımsızdır;
+    // çift analizi yalnızca geçmişe benzerlik puanı (yüzdelik dilim) olarak gösterilir.
+    var lastPick = null, checkSet = [];
+    var TOTAL = comb(90, 6);
+    var sig = new Intl.NumberFormat("tr-TR", { maximumSignificantDigits: 2 });
+    var one = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 1 });
+    var whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
+    function pMatch(k) { return comb(6, k) * comb(84, 6 - k) / TOTAL; }
+    function pctText(p) { return "%" + sig.format(p * 100); }
+    function checkGrid() {
+      var grid = document.getElementById("check-grid");
+      grid.innerHTML = "";
+      for (var n = 1; n <= 90; n++) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = n;
+        var on = checkSet.indexOf(n) >= 0;
+        if (on) b.className = "on";
+        b.setAttribute("aria-pressed", String(on));
+        b.disabled = !on && checkSet.length >= 6;
+        b.addEventListener("click", (function (n) {
+          return function () {
+            var i = checkSet.indexOf(n);
+            if (i >= 0) checkSet.splice(i, 1); else if (checkSet.length < 6) checkSet.push(n);
+            checkSet.sort(function (a, b) { return a - b; });
+            checkGrid();
+            checkRender();
+          };
+        })(n));
+        grid.appendChild(b);
+      }
+    }
+    function checkRender() {
+      var rack = document.getElementById("check-picked");
+      rack.innerHTML = "";
+      checkSet.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+      var out = document.getElementById("check-result");
+      out.innerHTML = "";
+      if (checkSet.length < 6 || !model) {
+        var hint = document.createElement("p");
+        hint.className = "check-hint";
+        hint.textContent = "Tablodan 6 sayı seçin (" + checkSet.length + "/6).";
+        out.appendChild(hint);
+        return;
+      }
+      var s = checkSet;
+
+      var v = document.createElement("p");
+      v.className = "verdict";
+      var big = document.createElement("b");
+      big.textContent = pctText(pMatch(6));
+      v.appendChild(document.createTextNode("6'sını birden bilme olasılığı: "));
+      v.appendChild(big);
+      v.appendChild(document.createTextNode(" (" + whole.format(TOTAL) + "'da 1). Her 6'lı için aynıdır; geçmiş analizler bunu değiştirmez."));
+      out.appendChild(v);
+
+      // Geçmiş çekilişlerle karşılaştırma: bu 6'lı kaç çekilişte k sayı tutturdu, rastgelelikte kaç beklenir.
+      var hits = [0, 0, 0, 0, 0, 0, 0];
+      model.list.forEach(function (d) {
+        var k = 0;
+        d.numbers.forEach(function (n) { if (s.indexOf(n) >= 0) k++; });
+        hits[k]++;
+      });
+      var table = document.createElement("table");
+      table.className = "odds";
+      var head = table.createTHead().insertRow();
+      ["Bilinen", "Olasılık", "Kaçta 1", "Geçmişte", "Beklenen"].forEach(function (h) {
+        var th = document.createElement("th");
+        th.textContent = h;
+        head.appendChild(th);
+      });
+      var body = table.createTBody();
+      [6, 5, 4, 3, 2].forEach(function (k) {
+        var p = pMatch(k), r = body.insertRow();
+        [k + " sayı", pctText(p), whole.format(1 / p), hits[k] + " kez", sig.format(p * model.draws)].forEach(function (t) {
+          r.insertCell().textContent = t;
+        });
+      });
+      var rj = body.insertRow();
+      ["5 + Joker", pctText(6 / TOTAL), whole.format(TOTAL / 6), "–", "–"].forEach(function (t) { rj.insertCell().textContent = t; });
+      out.appendChild(table);
+
+      // Çift analizi: bu 6'lının puanı rastgele 6'lıların yüzde kaçından yüksek.
+      var mine = score(s), below = 0, N = 10000;
+      for (var i = 0; i < N; i++) if (score(randomSet()) < mine) below++;
+      var pairNote = document.createElement("p");
+      pairNote.className = "note";
+      pairNote.textContent = "Ardışık slot çifti puanı: rastgele 6'lılar içinde puanı bundan düşük olanların oranı %" +
+        one.format(Math.floor(below / N * 1000) / 10) + "." +
+        (hits[6] ? " Bu 6'lı geçmişte çıktığı için çiftleri kendi çekilişiyle de sayılıyor; puan bu yüzden şişik." : "") + " Bu bir çıkma olasılığı değil; çiftlerin geçmişte beklenenden ne kadar sık geldiğini gösterir ve analiz bu sıklıkların şanstan farklı olmadığını buldu.";
+      out.appendChild(pairNote);
+    }
+    document.getElementById("check-clear").addEventListener("click", function () { checkSet = []; checkGrid(); checkRender(); });
+    document.getElementById("check-from-predict").addEventListener("click", function () {
+      if (!lastPick) return;
+      checkSet = lastPick.slice();
+      checkGrid();
+      checkRender();
+    });
+    checkGrid();
+
+    // Elle giriş: 8 slot (6 numara, Joker, SüperStar) + tarih. Kayıtlar artifact veritabanında data/loto/manual altında durur;
+    // veritabanı yoksa (ör. Vercel) form gizli kalır.
+    var SLOT_NAMES = ["1", "2", "3", "4", "5", "6", "Joker", "SüperStar"];
+    var slots = new Array(8).fill(null), active = 0, manualCol = null;
+    var dateInput = document.getElementById("entry-date");
+    function isoDay(d) { return d.toISOString().slice(0, 10); }
+    function isDrawDay(s) { var w = new Date(s + "T12:00:00Z").getUTCDay(); return w === 1 || w === 3 || w === 6; }
+    function drawNoOf(s) {
+      var d = new Date(s + "T12:00:00Z"), n = 0;
+      for (var t = new Date(Date.UTC(d.getUTCFullYear(), 0, 1, 12)); t <= d; t.setUTCDate(t.getUTCDate() + 1)) {
+        var w = t.getUTCDay();
+        if (w === 1 || w === 3 || w === 6) n++;
+      }
+      return n;
+    }
+    function cleanManual(x, id) {
+      if (!x || typeof x !== "object") return null;
+      var nums = Array.isArray(x.numbers) ? x.numbers.map(Number) : [];
+      var ok = function (n) { return Number.isInteger(n) && n >= 1 && n <= 90; };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(id) || nums.length !== 6 || !nums.every(ok) || new Set(nums).size !== 6) return null;
+      var j = Number(x.joker), s = Number(x.superstar);
+      return {
+        date: id, drawNo: drawNoOf(id), time: "21:30", manual: true,
+        numbers: nums.sort(function (a, b) { return a - b; }),
+        joker: ok(j) && nums.indexOf(j) < 0 ? j : null, superstar: ok(s) ? s : null
+      };
+    }
+    function taken(i) {
+      // Ana numaralar ve Joker aynı torbadan çekilir; SüperStar ayrı torbadan.
+      if (i === 7) return {};
+      var used = {};
+      for (var k = 0; k < 7; k++) if (k !== i && slots[k] != null) used[slots[k]] = true;
+      return used;
+    }
+    function setStatus(msg, warn) {
+      var el = document.getElementById("entry-status");
+      el.textContent = msg;
+      el.className = "status" + (warn ? " warn" : "");
+    }
+    function drawSlots() {
+      var ol = document.getElementById("slots");
+      ol.innerHTML = "";
+      slots.forEach(function (v, i) {
+        var li = document.createElement("li");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "slot ball" + (i === 6 ? " joker" : i === 7 ? " star" : "") + (v == null ? " empty" : "");
+        b.textContent = v == null ? "–" : v;
+        b.setAttribute("aria-pressed", String(i === active));
+        b.setAttribute("aria-label", SLOT_NAMES[i] + (i < 6 ? ". numara" : "") + ": " + (v == null ? "boş" : v));
+        b.addEventListener("click", function () { active = i; drawSlots(); drawGrid(); });
+        li.appendChild(b);
+        li.appendChild(document.createTextNode(i < 6 ? (i + 1) + ". slot" : SLOT_NAMES[i]));
+        ol.appendChild(li);
+      });
+    }
+    function drawGrid() {
+      var grid = document.getElementById("numgrid");
+      grid.innerHTML = "";
+      var used = taken(active);
+      for (var n = 1; n <= 90; n++) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = n;
+        b.disabled = !!used[n];
+        if (slots[active] === n) b.className = "on";
+        b.addEventListener("click", (function (n) {
+          return function () {
+            slots[active] = slots[active] === n ? null : n;
+            if (slots[active] != null) {
+              var next = slots.findIndex(function (v, k) { return k > active && v == null; });
+              if (next < 0) next = slots.indexOf(null);
+              if (next >= 0) active = next;
+            }
+            setStatus("");
+            drawSlots();
+            drawGrid();
+          };
+        })(n));
+        grid.appendChild(b);
+      }
+    }
+    function describeDate() {
+      var el = document.getElementById("entry-day"), v = dateInput.value;
+      if (!v) { el.textContent = "Tarih seçin."; el.className = "entry-day warn"; return; }
+      var known = base && base.draws.some(function (d) { return d.date === v; });
+      var mine = manual.some(function (d) { return d.date === v; });
+      if (!isDrawDay(v)) { el.textContent = dayName.format(asDate(v)) + ": çekiliş günü değil (Pazartesi, Çarşamba, Cumartesi)."; el.className = "entry-day warn"; return; }
+      el.className = "entry-day" + (known ? " warn" : "");
+      el.textContent = dayName.format(asDate(v)) + " · " + drawNoOf(v) + ". çekiliş" +
+        (known ? " · Bu tarih doğrulanmış verilerde zaten var." : mine ? " · Elle girilmiş kaydın üzerine yazılır." : "");
+    }
+    function nextDrawDate() {
+      var dates = (base ? base.draws : []).concat(manual).map(function (d) { return d.date; }).sort();
+      var t = new Date((dates[dates.length - 1] || isoDay(new Date())) + "T12:00:00Z");
+      do { t.setUTCDate(t.getUTCDate() + 1); } while (!isDrawDay(isoDay(t)));
+      return isoDay(t);
+    }
+    function drawManualList() {
+      var ul = document.getElementById("manual-list");
+      ul.innerHTML = "";
+      manual.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (m) {
+        var li = document.createElement("li");
+        var text = document.createElement("span");
+        var b = document.createElement("b");
+        b.textContent = m.numbers.join(" ");
+        text.appendChild(document.createTextNode(shortDate.format(asDate(m.date)) + ": "));
+        text.appendChild(b);
+        text.appendChild(document.createTextNode(" · J " + (m.joker ?? "–") + " · SS " + (m.superstar ?? "–")));
+        var actions = document.createElement("span");
+        var edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "Düzenle";
+        edit.addEventListener("click", function () {
+          dateInput.value = m.date;
+          slots = m.numbers.concat([m.joker, m.superstar]);
+          active = Math.max(0, slots.indexOf(null));
+          describeDate(); drawSlots(); drawGrid();
+          setStatus(shortDate.format(asDate(m.date)) + " kaydı forma yüklendi.");
+        });
+        var del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "Sil";
+        del.addEventListener("click", function () {
+          if (!confirm(shortDate.format(asDate(m.date)) + " kaydı silinsin mi?")) return;
+          manualCol.doc(m.date).delete()
+            .then(function () { setStatus(shortDate.format(asDate(m.date)) + " kaydı silindi."); })
+            .catch(function (e) { setStatus("Silinemedi: " + (e && e.message || e), true); });
+        });
+        actions.appendChild(edit);
+        actions.appendChild(del);
+        li.appendChild(text);
+        li.appendChild(actions);
+        ul.appendChild(li);
+      });
+    }
+    function entryRefresh() {
+      if (document.getElementById("entry").hidden) return;
+      if (!dateInput.value) dateInput.value = nextDrawDate();
+      describeDate();
+      drawManualList();
+    }
+    document.getElementById("entry-clear").addEventListener("click", function () {
+      slots = new Array(8).fill(null); active = 0;
+      setStatus(""); drawSlots(); drawGrid();
+    });
+    dateInput.addEventListener("change", describeDate);
+    document.getElementById("entry-save").addEventListener("click", function () {
+      var v = dateInput.value;
+      if (!v) return setStatus("Önce tarihi seçin.", true);
+      if (!isDrawDay(v)) return setStatus("Seçilen gün çekiliş günü değil.", true);
+      if (base && base.draws.some(function (d) { return d.date === v; })) return setStatus("Bu tarih doğrulanmış verilerde zaten var; elle kayıt eklenmedi.", true);
+      var empty = slots.map(function (x, i) { return x == null ? SLOT_NAMES[i] : null; }).filter(Boolean);
+      if (empty.length) return setStatus("Boş slot: " + empty.join(", ") + ".", true);
+      var btn = this;
+      btn.disabled = true;
+      manualCol.doc(v).set({
+        numbers: slots.slice(0, 6).sort(function (a, b) { return a - b; }),
+        joker: slots[6], superstar: slots[7], savedAt: new Date().toISOString()
+      }).then(function () {
+        setStatus(shortDate.format(asDate(v)) + " çekilişi kaydedildi.");
+        slots = new Array(8).fill(null); active = 0;
+        dateInput.value = "";
+        drawSlots(); drawGrid();
+      }).catch(function (e) {
+        setStatus("Kaydedilemedi: " + (e && e.message || e), true);
+      }).finally(function () { btn.disabled = false; });
+    });
+
+    if (window.claude && claude.use) {
+      Promise.all([claude.use("db"), claude.use("user")]).then(function (caps) {
+        var db = caps[0], user = caps[1];
+        if (!db) return;
+        manualCol = db.collection("data/loto/manual");
+        manualCol.onSnapshot(function (snap) {
+          manual = snap.docs.map(function (d) { return cleanManual(d.data(), d.id); }).filter(Boolean);
+          if (base) paint(merged());
+          entryRefresh();
+        }, function () {});
+        return user ? user.canEdit() : false;
+      }).then(function (canEdit) {
+        if (!canEdit) return;
+        document.getElementById("entry").hidden = false;
+        drawSlots(); drawGrid(); entryRefresh();
+      }).catch(function () {});
+    }
+
+    try { render(JSON.parse(document.getElementById("seed").textContent)); } catch (e) {}
+    fetch("data/results.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(render)
+      .catch(function () {});
+  })();
+</script>
