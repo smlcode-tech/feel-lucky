@@ -124,7 +124,7 @@
   .numgrid button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .entry-actions { display: flex; flex-wrap: wrap; gap: 10px; }
   .entry button.primary { font: 500 15px var(--body); color: #fff; background: var(--accent); border: 0; border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
-  .entry button.ghost { font: 500 15px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
+  .entry button.ghost, .check button.ghost { font: 500 15px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; min-height: 44px; cursor: pointer; }
   .entry button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   .entry .status { margin: 0; font-size: 14px; color: var(--muted); }
   .manual-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -132,6 +132,17 @@
   .manual-list b { font-family: var(--mono); font-weight: 600; }
   .manual-list button { font: 500 13px var(--body); color: var(--accent); background: none; border: 0; padding: 6px 8px; min-height: 32px; cursor: pointer; }
   .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+  .check { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px clamp(16px, 4vw, 32px); display: grid; gap: 16px; }
+  .check .rack { min-height: 48px; }
+  .check .ball { --size: 48px; }
+  .check-hint { margin: 0; color: var(--muted); font-size: 15px; }
+  .odds { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .odds th, .odds td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  .odds th:first-child, .odds td:first-child { text-align: left; }
+  .odds th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .verdict { margin: 0; font-size: 15px; }
+  .verdict b { font-family: var(--display); font-size: 22px; }
 
   footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   footer a { color: var(--accent); }
@@ -150,6 +161,20 @@
     <ol class="rack" id="predict-numbers" aria-live="polite"></ol>
     <ul class="pairs" id="predict-pairs"></ul>
     <p class="note" id="predict-note"></p>
+  </section>
+
+  <section class="check" aria-labelledby="check-title">
+    <div>
+      <p class="eyebrow">Kendi kombinasyonun</p>
+      <h2 id="check-title">6'lını değerlendir</h2>
+    </div>
+    <ol class="rack" id="check-picked" aria-label="Seçilen numaralar"></ol>
+    <div class="numgrid" id="check-grid" role="group" aria-label="Numara seç (6 adet)"></div>
+    <div class="entry-actions">
+      <button type="button" class="ghost" id="check-from-predict">Önerilen 6'lıyı al</button>
+      <button type="button" class="ghost" id="check-clear">Temizle</button>
+    </div>
+    <div id="check-result" aria-live="polite"></div>
   </section>
 
   <header>
@@ -1118,6 +1143,7 @@
 
       buildModel(draws);
       predict();
+      checkRender();
 
       if (data.updatedAt) {
         document.getElementById("stamp").textContent = "Güncellendi: " +
@@ -1147,7 +1173,7 @@
           out[s[i]]++;
         }
       });
-      model = { pair: pair, out: out, seen: seen, draws: draws.length, c895: comb(89, 5) };
+      model = { pair: pair, out: out, seen: seen, draws: draws.length, list: draws, c895: comb(89, 5) };
     }
     function pairStats(x, y) {
       var count = model.pair[x * 100 + y] || 0;
@@ -1181,6 +1207,7 @@
       var buf = new Uint32Array(1);
       crypto.getRandomValues(buf);
       var pick = pool[buf[0] % keep].s;
+      lastPick = pick;
 
       var rack = document.getElementById("predict-numbers");
       rack.innerHTML = "";
@@ -1205,6 +1232,107 @@
         " kombinasyon) biri rastgele seçildi. Her 6'lının çıkma olasılığı aynıdır (622.614.630'da 1); bu filtre kazanma şansını artırmaz.";
     }
     document.getElementById("predict-btn").addEventListener("click", predict);
+
+    // Kendi 6'lını değerlendir. Gerçek olasılık hipergeometrik dağılımdan gelir ve analizden bağımsızdır;
+    // çift analizi yalnızca geçmişe benzerlik puanı (yüzdelik dilim) olarak gösterilir.
+    var lastPick = null, checkSet = [];
+    var TOTAL = comb(90, 6);
+    var sig = new Intl.NumberFormat("tr-TR", { maximumSignificantDigits: 2 });
+    var one = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 1 });
+    var whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
+    function pMatch(k) { return comb(6, k) * comb(84, 6 - k) / TOTAL; }
+    function pctText(p) { return "%" + sig.format(p * 100); }
+    function checkGrid() {
+      var grid = document.getElementById("check-grid");
+      grid.innerHTML = "";
+      for (var n = 1; n <= 90; n++) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = n;
+        var on = checkSet.indexOf(n) >= 0;
+        if (on) b.className = "on";
+        b.setAttribute("aria-pressed", String(on));
+        b.disabled = !on && checkSet.length >= 6;
+        b.addEventListener("click", (function (n) {
+          return function () {
+            var i = checkSet.indexOf(n);
+            if (i >= 0) checkSet.splice(i, 1); else if (checkSet.length < 6) checkSet.push(n);
+            checkSet.sort(function (a, b) { return a - b; });
+            checkGrid();
+            checkRender();
+          };
+        })(n));
+        grid.appendChild(b);
+      }
+    }
+    function checkRender() {
+      var rack = document.getElementById("check-picked");
+      rack.innerHTML = "";
+      checkSet.forEach(function (n) { rack.appendChild(ball(n, "", "li")); });
+      var out = document.getElementById("check-result");
+      out.innerHTML = "";
+      if (checkSet.length < 6 || !model) {
+        var hint = document.createElement("p");
+        hint.className = "check-hint";
+        hint.textContent = "Tablodan 6 sayı seçin (" + checkSet.length + "/6).";
+        out.appendChild(hint);
+        return;
+      }
+      var s = checkSet;
+
+      var v = document.createElement("p");
+      v.className = "verdict";
+      var big = document.createElement("b");
+      big.textContent = pctText(pMatch(6));
+      v.appendChild(document.createTextNode("6'sını birden bilme olasılığı: "));
+      v.appendChild(big);
+      v.appendChild(document.createTextNode(" (" + whole.format(TOTAL) + "'da 1). Her 6'lı için aynıdır; geçmiş analizler bunu değiştirmez."));
+      out.appendChild(v);
+
+      // Geçmiş çekilişlerle karşılaştırma: bu 6'lı kaç çekilişte k sayı tutturdu, rastgelelikte kaç beklenir.
+      var hits = [0, 0, 0, 0, 0, 0, 0];
+      model.list.forEach(function (d) {
+        var k = 0;
+        d.numbers.forEach(function (n) { if (s.indexOf(n) >= 0) k++; });
+        hits[k]++;
+      });
+      var table = document.createElement("table");
+      table.className = "odds";
+      var head = table.createTHead().insertRow();
+      ["Bilinen", "Olasılık", "Kaçta 1", "Geçmişte", "Beklenen"].forEach(function (h) {
+        var th = document.createElement("th");
+        th.textContent = h;
+        head.appendChild(th);
+      });
+      var body = table.createTBody();
+      [6, 5, 4, 3, 2].forEach(function (k) {
+        var p = pMatch(k), r = body.insertRow();
+        [k + " sayı", pctText(p), whole.format(1 / p), hits[k] + " kez", sig.format(p * model.draws)].forEach(function (t) {
+          r.insertCell().textContent = t;
+        });
+      });
+      var rj = body.insertRow();
+      ["5 + Joker", pctText(6 / TOTAL), whole.format(TOTAL / 6), "–", "–"].forEach(function (t) { rj.insertCell().textContent = t; });
+      out.appendChild(table);
+
+      // Çift analizi: bu 6'lının puanı rastgele 6'lıların yüzde kaçından yüksek.
+      var mine = score(s), below = 0, N = 10000;
+      for (var i = 0; i < N; i++) if (score(randomSet()) < mine) below++;
+      var pairNote = document.createElement("p");
+      pairNote.className = "note";
+      pairNote.textContent = "Ardışık slot çifti puanı: rastgele 6'lılar içinde puanı bundan düşük olanların oranı %" +
+        one.format(Math.floor(below / N * 1000) / 10) + "." +
+        (hits[6] ? " Bu 6'lı geçmişte çıktığı için çiftleri kendi çekilişiyle de sayılıyor; puan bu yüzden şişik." : "") + " Bu bir çıkma olasılığı değil; çiftlerin geçmişte beklenenden ne kadar sık geldiğini gösterir ve analiz bu sıklıkların şanstan farklı olmadığını buldu.";
+      out.appendChild(pairNote);
+    }
+    document.getElementById("check-clear").addEventListener("click", function () { checkSet = []; checkGrid(); checkRender(); });
+    document.getElementById("check-from-predict").addEventListener("click", function () {
+      if (!lastPick) return;
+      checkSet = lastPick.slice();
+      checkGrid();
+      checkRender();
+    });
+    checkGrid();
 
     // Elle giriş: 8 slot (6 numara, Joker, SüperStar) + tarih. Kayıtlar artifact veritabanında data/loto/manual altında durur;
     // veritabanı yoksa (ör. Vercel) form gizli kalır.
