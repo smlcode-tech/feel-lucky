@@ -76,6 +76,9 @@
 
   .history { display: grid; gap: 14px; }
   .rows { list-style: none; margin: 0; padding: 0; }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+  .filters label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .filters select { font: 500 15px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 44px; }
   .history-sub { margin: -6px 0 0; color: var(--muted); font-size: 15px; }
   .row { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 12px 20px; padding-block: 16px; border-bottom: 1px solid var(--line); }
   .month { padding-block: 22px 6px; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
@@ -186,6 +189,10 @@
 
   <section class="history" aria-labelledby="history-title">
     <h2 id="history-title">Ocak 2021'den bu yana</h2>
+    <div class="filters" role="group" aria-label="Çekilişleri filtrele">
+      <label>Ay <select id="filter-month"><option value="">Tümü</option></select></label>
+      <label>Yıl <select id="filter-year"><option value="">Tümü</option></select></label>
+    </div>
     <p class="history-sub" id="history-sub"></p>
     <ol class="rows" id="rows"></ol>
   </section>
@@ -1011,6 +1018,77 @@
       entryRefresh();
     }
 
+    // Geçmiş listesi: Ay ve Yıl filtresine göre ("" = tümü).
+    var allDraws = [];
+    var MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+    var monthName = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    var yearDate = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    var yearSel = document.getElementById("filter-year"), monthSel = document.getElementById("filter-month");
+    MONTHS.forEach(function (m, i) { monthSel.add(new Option(m, String(i + 1).padStart(2, "0"))); });
+    function fillYears() {
+      var keep = yearSel.value;
+      var years = Array.from(new Set(allDraws.map(function (d) { return d.date.slice(0, 4); })));
+      yearSel.length = 1;
+      years.forEach(function (y) { yearSel.add(new Option(y, y)); });
+      yearSel.value = years.indexOf(keep) >= 0 ? keep : "";
+    }
+    function drawRows() {
+      var y = yearSel.value, mo = monthSel.value;
+      var draws = allDraws.filter(function (d) {
+        return (!y || d.date.slice(0, 4) === y) && (!mo || d.date.slice(5, 7) === mo);
+      });
+      var rows = document.getElementById("rows");
+      rows.innerHTML = "";
+      var lastMonth = "";
+    draws.forEach(function (d) {
+      var m = d.date.slice(0, 7);
+      if (m !== lastMonth) {
+        lastMonth = m;
+        var head = document.createElement("li");
+        head.className = "month";
+        head.textContent = monthName.format(asDate(d.date));
+        rows.appendChild(head);
+      }
+      var li = document.createElement("li");
+      li.className = "row";
+      var t = document.createElement("time");
+      t.dateTime = d.date;
+      t.textContent = shortDate.format(asDate(d.date));
+      var small = document.createElement("small");
+      small.textContent = dayName.format(asDate(d.date)) + (d.drawNo ? " · " + d.drawNo + ". çekiliş" : "");
+      t.appendChild(small);
+      if (d.manual) {
+        var tag = document.createElement("small");
+        tag.className = "tag";
+        tag.textContent = "Elle eklendi";
+        t.appendChild(tag);
+      }
+      var set = document.createElement("div");
+      set.className = "set";
+      set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + (d.superstar ?? "bilinmiyor"));
+      d.numbers.forEach(function (n) { set.appendChild(ball(n)); });
+      var sep = document.createElement("span");
+      sep.className = "sep";
+      set.appendChild(sep);
+      set.appendChild(ball(d.joker, "joker"));
+      set.appendChild(ball(d.superstar, "star"));
+      li.appendChild(t);
+      li.appendChild(set);
+      rows.appendChild(li);
+    });
+      var sub = document.getElementById("history-sub");
+      var period = (mo ? MONTHS[+mo - 1] + " " : "") + (y || (mo ? "(tüm yıllar)" : ""));
+      if (!draws.length) {
+        sub.textContent = (period || "Bu seçim") + " için kayıtlı çekiliş yok.";
+        return;
+      }
+      var first = draws[draws.length - 1], latest = draws[0];
+      sub.textContent = (period ? period + ": " : "") + yearDate.format(asDate(first.date)) + " – " + yearDate.format(asDate(latest.date)) +
+        " arası " + draws.length + " çekiliş. Çekilişler Pazartesi, Çarşamba ve Cumartesi 21:30'da yapılır.";
+    }
+    yearSel.addEventListener("change", drawRows);
+    monthSel.addEventListener("change", drawRows);
+
     function paint(data) {
       var draws = data.draws.filter(valid).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
       if (!draws.length) return;
@@ -1034,50 +1112,9 @@
       note.textContent = last.note || "";
       note.hidden = !last.note;
 
-      var rows = document.getElementById("rows");
-      rows.innerHTML = "";
-      var monthName = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
-      var lastMonth = "";
-      draws.forEach(function (d) {
-        var m = d.date.slice(0, 7);
-        if (m !== lastMonth) {
-          lastMonth = m;
-          var head = document.createElement("li");
-          head.className = "month";
-          head.textContent = monthName.format(asDate(d.date));
-          rows.appendChild(head);
-        }
-        var li = document.createElement("li");
-        li.className = "row";
-        var t = document.createElement("time");
-        t.dateTime = d.date;
-        t.textContent = shortDate.format(asDate(d.date));
-        var small = document.createElement("small");
-        small.textContent = dayName.format(asDate(d.date)) + (d.drawNo ? " · " + d.drawNo + ". çekiliş" : "");
-        t.appendChild(small);
-        if (d.manual) {
-          var tag = document.createElement("small");
-          tag.className = "tag";
-          tag.textContent = "Elle eklendi";
-          t.appendChild(tag);
-        }
-        var set = document.createElement("div");
-        set.className = "set";
-        set.setAttribute("aria-label", "Numaralar " + d.numbers.join(", ") + ", Joker " + (d.joker ?? "bilinmiyor") + ", SüperStar " + (d.superstar ?? "bilinmiyor"));
-        d.numbers.forEach(function (n) { set.appendChild(ball(n)); });
-        var sep = document.createElement("span");
-        sep.className = "sep";
-        set.appendChild(sep);
-        set.appendChild(ball(d.joker, "joker"));
-        set.appendChild(ball(d.superstar, "star"));
-        li.appendChild(t);
-        li.appendChild(set);
-        rows.appendChild(li);
-      });
-
-      var oldest = draws[draws.length - 1];
-      document.getElementById("history-sub").textContent =
-        shortDate.format(asDate(oldest.date)) + " – " + shortDate.format(asDate(last.date)) + " arası " + draws.length + " çekiliş. Çekilişler Pazartesi, Çarşamba ve Cumartesi 21:30'da yapılır.";
+      allDraws = draws;
+      fillYears();
+      drawRows();
 
       buildModel(draws);
       predict();
